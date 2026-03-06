@@ -57,3 +57,4 @@ next-env.d.ts
 # System Files
 .DS_Store
 .env.example
+.env
