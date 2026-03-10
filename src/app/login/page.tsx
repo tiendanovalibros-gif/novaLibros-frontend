@@ -58,7 +58,7 @@ export default function LoginPage() {
       return;
     }
     setLoading(true);
-    // TODO: conectar con auth.service.ts
+    // TODO: conectar con auth.service.ts yess
     setTimeout(() => setLoading(false), 1500);
   };
 
