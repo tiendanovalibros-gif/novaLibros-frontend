@@ -13,8 +13,6 @@ import {
   fieldErrorText,
   alertError,
   alertErrorText,
-  alertSuccess,
-  alertSuccessText,
   globalStyles,
   colors,
 } from '@/styles/auth.styles'
