@@ -141,7 +141,10 @@ const BookCover = ({ libro }: { libro: Libro }) => (
 
 // ─── Tarjeta de libro ─────────────────────────────────────────────────────────
 const BookCard = ({ libro }: { libro: Libro }) => (
-  <div className="bg-white border border-slate-200 rounded-xl overflow-hidden cursor-pointer transition-all duration-150 hover:-translate-y-1 hover:shadow-lg group">
+  <a
+    href={`/books/${libro.id}`}
+    className="bg-white border border-slate-200 rounded-xl overflow-hidden transition-all duration-150 hover:-translate-y-1 hover:shadow-lg group block no-underline"
+  >
     <div className="w-full aspect-[2/3] relative overflow-hidden">
       <BookCover libro={libro} />
       <span
@@ -175,15 +178,17 @@ const BookCard = ({ libro }: { libro: Libro }) => (
             <span className="text-xs italic">Inicia sesión para comprar</span>
           </div>
         </div>
+        {/* e.preventDefault() para que el clic en el carrito no navegue */}
         <div
           className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center opacity-50 cursor-not-allowed group-hover:bg-blue-50 transition-colors"
           title="Inicia sesión para agregar al carrito"
+          onClick={e => e.preventDefault()}
         >
           <CartIcon />
         </div>
       </div>
     </div>
-  </div>
+  </a>
 )
 
 // ─── Página principal ─────────────────────────────────────────────────────────
@@ -255,7 +260,6 @@ export default function CataloguePage() {
             <span className="text-slate-900 text-xl font-bold tracking-tight">NovaLibros</span>
           </div>
 
-          {/* Desktop buttons */}
           <div className="hidden sm:flex items-center gap-3">
             <a
               href="/login"
@@ -271,7 +275,6 @@ export default function CataloguePage() {
             </a>
           </div>
 
-          {/* Hamburguesa mobile */}
           <button
             className="sm:hidden text-slate-700 p-1"
             onClick={() => setMenuAbierto(!menuAbierto)}
@@ -280,7 +283,6 @@ export default function CataloguePage() {
           </button>
         </div>
 
-        {/* Menú mobile */}
         {menuAbierto && (
           <div className="sm:hidden bg-white border-t border-slate-100 px-4 py-4 flex flex-col gap-3">
             <a
@@ -359,7 +361,7 @@ export default function CataloguePage() {
 
       {/* ── Main ── */}
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-8">
-        {/* Filtros género — scroll horizontal en mobile */}
+        {/* Filtros género */}
         <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
           <span className="text-slate-600 text-sm font-semibold shrink-0">Género:</span>
           {GENEROS.map(g => (
@@ -422,7 +424,7 @@ export default function CataloguePage() {
           {busqueda && (
             <span>
               {' '}
-              para "<strong className="text-slate-800">{busqueda}</strong>"
+              para &quot;<strong className="text-slate-800">{busqueda}</strong>&quot;
             </span>
           )}
         </p>
