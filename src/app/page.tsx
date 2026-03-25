@@ -1,7 +1,53 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { LIBROS_MOCK, GENEROS, RANGOS_PRECIO, OPCIONES_ORDEN, type Libro } from '@/data/libros.mock'
+import { useState, useEffect, useMemo } from 'react'
+import { apiFetch } from '@/services/api.client'
+
+// ─── Tipos de la API ──────────────────────────────────────────────────────────
+interface Libro {
+  id: string
+  titulo: string
+  idAutor: number
+  idGenero: number
+  idEditorial: number
+  anoPublicacion: number
+  precio: number
+  isbn: string
+  idioma: string
+  descripcion?: string
+  imagenPortada?: string
+  estado: string
+}
+interface Autor {
+  id: number
+  nombre: string
+}
+interface Genero {
+  id: number
+  nombre: string
+}
+interface Editorial {
+  id: number
+  nombre: string
+}
+
+// ─── Constantes ──────────────────────────────────────────────────────────────
+const RANGOS_PRECIO = [
+  { min: 0, max: 1000000, label: 'Todos los precios' },
+  { min: 0, max: 50000, label: 'Hasta $50.000' },
+  { min: 50000, max: 100000, label: '$50.000 - $100.000' },
+  { min: 100000, max: 200000, label: '$100.000 - $200.000' },
+  { min: 200000, max: 1000000, label: 'Más de $200.000' },
+]
+
+const OPCIONES_ORDEN = [
+  { value: 'relevancia', label: 'Relevancia' },
+  { value: 'precio_asc', label: 'Precio: menor a mayor' },
+  { value: 'precio_desc', label: 'Precio: mayor a menor' },
+  { value: 'reciente', label: 'Más recientes' },
+  { value: 'antiguo', label: 'Más antiguos' },
+  { value: 'az', label: 'Alfabético A-Z' },
+]
 
 // ─── Iconos ───────────────────────────────────────────────────────────────────
 const BookIcon = ({ size = 20 }: { size?: number }) => (
@@ -118,54 +164,129 @@ const CloseIcon = () => (
   </svg>
 )
 
-// ─── Portada placeholder ──────────────────────────────────────────────────────
-const BookCover = ({ libro }: { libro: Libro }) => (
-  <div
-    className="w-full h-full flex flex-col items-center justify-center gap-2 p-3"
-    style={{ backgroundColor: libro.portadaColor }}
-  >
-    <span
-      className="text-6xl font-extrabold leading-none select-none"
-      style={{ color: 'rgba(255,255,255,0.15)' }}
+// ─── Generar portada ──────────────────────────────────────────────────────────
+const generarColorPortada = (titulo: string) => {
+  const colors = [
+    '#3B82F6',
+    '#EF4444',
+    '#10B981',
+    '#F59E0B',
+    '#8B5CF6',
+    '#06B6D4',
+    '#84CC16',
+    '#F97316',
+  ]
+  const index = titulo.length % colors.length
+  return colors[index]
+}
+
+const generarLetraPortada = (titulo: string) => {
+  return titulo.charAt(0).toUpperCase()
+}
+
+// ─── Portada con imagen o placeholder ──────────────────────────────────────────
+const BookCover = ({ libro }: { libro: Libro }) => {
+  const [imageError, setImageError] = useState(false)
+
+  // Verificar si la URL de la imagen es válida
+  const imageUrl = libro.imagenPortada
+  const isValidUrl =
+    imageUrl &&
+    (imageUrl.startsWith('http') || imageUrl.startsWith('https') || imageUrl.startsWith('/'))
+
+  // Si es una URL relativa, agregar el dominio de la API
+  const fullImageUrl =
+    imageUrl && imageUrl.startsWith('/')
+      ? `${process.env.NEXT_PUBLIC_API_URL}${imageUrl}`
+      : imageUrl
+
+  if (isValidUrl && !imageError) {
+    return (
+      <div className="w-full h-full relative overflow-hidden">
+        <img
+          src={fullImageUrl}
+          alt={`Portada de ${libro.titulo}`}
+          className="w-full h-full object-cover"
+          onError={() => {
+            console.log('Error cargando imagen:', fullImageUrl)
+            setImageError(true)
+          }}
+        />
+        <span
+          className={`absolute top-2 left-2 px-2 py-0.5 rounded-md text-xs font-bold border
+          ${
+            libro.estado === 'nuevo'
+              ? 'bg-green-50 text-green-800 border-green-400'
+              : libro.estado === 'agotado'
+                ? 'bg-red-50 text-red-800 border-red-400'
+                : 'bg-yellow-50 text-yellow-800 border-yellow-400'
+          }`}
+        >
+          {libro.estado}
+        </span>
+      </div>
+    )
+  }
+
+  // Fallback: portada generada
+  return (
+    <div
+      className="w-full h-full flex flex-col items-center justify-center gap-2 p-3 relative"
+      style={{ backgroundColor: generarColorPortada(libro.titulo) }}
     >
-      {libro.portadaLetra}
-    </span>
-    <span
-      className="text-xs font-semibold text-center leading-tight line-clamp-2 max-w-full"
-      style={{ color: 'rgba(255,255,255,0.5)' }}
-    >
-      {libro.titulo}
-    </span>
-  </div>
-)
+      <span
+        className="text-6xl font-extrabold leading-none select-none"
+        style={{ color: 'rgba(255,255,255,0.15)' }}
+      >
+        {generarLetraPortada(libro.titulo)}
+      </span>
+      <span
+        className="text-xs font-semibold text-center leading-tight line-clamp-2 max-w-full"
+        style={{ color: 'rgba(255,255,255,0.5)' }}
+      >
+        {libro.titulo}
+      </span>
+      <span
+        className={`absolute top-2 left-2 px-2 py-0.5 rounded-md text-xs font-bold border
+        ${
+          libro.estado === 'nuevo'
+            ? 'bg-green-50 text-green-800 border-green-400'
+            : libro.estado === 'agotado'
+              ? 'bg-red-50 text-red-800 border-red-400'
+              : 'bg-yellow-50 text-yellow-800 border-yellow-400'
+        }`}
+      >
+        {libro.estado}
+      </span>
+    </div>
+  )
+}
 
 // ─── Tarjeta de libro ─────────────────────────────────────────────────────────
-const BookCard = ({ libro }: { libro: Libro }) => (
+const BookCard = ({
+  libro,
+  nombreAutor,
+  nombreGenero,
+}: {
+  libro: Libro
+  nombreAutor: (id: number) => string
+  nombreGenero: (id: number) => string
+}) => (
   <a
     href={`/books/${libro.id}`}
     className="bg-white border border-slate-200 rounded-xl overflow-hidden transition-all duration-150 hover:-translate-y-1 hover:shadow-lg group block no-underline"
   >
     <div className="w-full aspect-[2/3] relative overflow-hidden">
       <BookCover libro={libro} />
-      <span
-        className={`absolute top-2 left-2 px-2 py-0.5 rounded-md text-xs font-bold border
-        ${
-          libro.estado === 'Nuevo'
-            ? 'bg-green-50 text-green-800 border-green-400'
-            : 'bg-yellow-50 text-yellow-800 border-yellow-400'
-        }`}
-      >
-        {libro.estado}
-      </span>
     </div>
 
     <div className="p-3">
       <p className="text-slate-900 text-sm font-bold leading-snug mb-1 line-clamp-2">
         {libro.titulo}
       </p>
-      <p className="text-slate-500 text-xs mb-2">{libro.autor}</p>
+      <p className="text-slate-500 text-xs mb-2">{nombreAutor(libro.idAutor)}</p>
       <span className="inline-block bg-blue-50 text-blue-800 text-xs font-medium px-2 py-0.5 rounded mb-3">
-        {libro.genero}
+        {nombreGenero(libro.idGenero)}
       </span>
 
       <div className="flex items-center justify-between pt-2 border-t border-slate-100">
@@ -193,6 +314,12 @@ const BookCard = ({ libro }: { libro: Libro }) => (
 
 // ─── Página principal ─────────────────────────────────────────────────────────
 export default function CataloguePage() {
+  const [libros, setLibros] = useState<Libro[]>([])
+  const [autores, setAutores] = useState<Autor[]>([])
+  const [generos, setGeneros] = useState<Genero[]>([])
+  const [editoriales, setEditoriales] = useState<Editorial[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [busqueda, setBusqueda] = useState('')
   const [inputBusqueda, setInputBusqueda] = useState('')
   const [generoActivo, setGeneroActivo] = useState('Todos')
@@ -200,19 +327,53 @@ export default function CataloguePage() {
   const [orden, setOrden] = useState('relevancia')
   const [menuAbierto, setMenuAbierto] = useState(false)
 
+  useEffect(() => {
+    cargarDatos()
+  }, [])
+
+  const cargarDatos = async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const [l, a, g, e] = await Promise.all([
+        apiFetch<Libro[]>('/libros'),
+        apiFetch<Autor[]>('/autores'),
+        apiFetch<Genero[]>('/generos'),
+        apiFetch<Editorial[]>('/editoriales'),
+      ])
+      setLibros(l)
+      setAutores(a)
+      setGeneros(g)
+      setEditoriales(e)
+    } catch {
+      setError('Error al cargar los datos')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const nombreAutor = (id: number) => autores.find(a => a.id === id)?.nombre ?? `Autor #${id}`
+  const nombreGenero = (id: number) => generos.find(g => g.id === id)?.nombre ?? `Género #${id}`
+  const nombreEditorial = (id: number) =>
+    editoriales.find(e => e.id === id)?.nombre ?? `Editorial #${id}`
+
   const librosFiltrados = useMemo(() => {
-    let r = [...LIBROS_MOCK]
+    let r = [...libros]
     if (busqueda.trim()) {
       const q = busqueda.toLowerCase()
       r = r.filter(
         l =>
           l.titulo.toLowerCase().includes(q) ||
-          l.autor.toLowerCase().includes(q) ||
-          l.genero.toLowerCase().includes(q) ||
-          l.editorial.toLowerCase().includes(q)
+          nombreAutor(l.idAutor).toLowerCase().includes(q) ||
+          nombreGenero(l.idGenero).toLowerCase().includes(q) ||
+          nombreEditorial(l.idEditorial).toLowerCase().includes(q) ||
+          l.isbn.toLowerCase().includes(q)
       )
     }
-    if (generoActivo !== 'Todos') r = r.filter(l => l.genero === generoActivo)
+    if (generoActivo !== 'Todos') {
+      const generoId = generos.find(g => g.nombre === generoActivo)?.id
+      if (generoId) r = r.filter(l => l.idGenero === generoId)
+    }
     const rango = RANGOS_PRECIO[rangoIdx]
     r = r.filter(l => l.precio >= rango.min && l.precio <= rango.max)
     switch (orden) {
@@ -233,7 +394,7 @@ export default function CataloguePage() {
         break
     }
     return r
-  }, [busqueda, generoActivo, rangoIdx, orden])
+  }, [libros, busqueda, generoActivo, rangoIdx, orden, autores, generos, editoriales])
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -346,9 +507,9 @@ export default function CataloguePage() {
       <div className="hidden md:block bg-blue-50 border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-6 py-3 flex gap-8">
           {[
-            { icon: '📚', text: `${LIBROS_MOCK.length} títulos disponibles` },
-            { icon: '✍️', text: `${new Set(LIBROS_MOCK.map(l => l.autor)).size} autores` },
-            { icon: '🏷️', text: `${GENEROS.length - 1} géneros` },
+            { icon: '📚', text: `${libros.length} títulos disponibles` },
+            { icon: '✍️', text: `${autores.length} autores` },
+            { icon: '🏷️', text: `${generos.length} géneros` },
             { icon: '🚚', text: 'Entrega en Colombia' },
           ].map(s => (
             <div key={s.text} className="flex items-center gap-2 text-blue-900 text-xs font-medium">
@@ -364,7 +525,7 @@ export default function CataloguePage() {
         {/* Filtros género */}
         <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
           <span className="text-slate-600 text-sm font-semibold shrink-0">Género:</span>
-          {GENEROS.map(g => (
+          {['Todos', ...generos.map(g => g.nombre)].map(g => (
             <button
               key={g}
               onClick={() => setGeneroActivo(g)}
@@ -418,22 +579,41 @@ export default function CataloguePage() {
         </div>
 
         {/* Contador */}
-        <p className="text-slate-500 text-sm mb-4">
-          <span className="text-slate-900 font-bold">{librosFiltrados.length}</span>{' '}
-          {librosFiltrados.length === 1 ? 'libro encontrado' : 'libros encontrados'}
-          {busqueda && (
-            <span>
-              {' '}
-              para &quot;<strong className="text-slate-800">{busqueda}</strong>&quot;
-            </span>
-          )}
-        </p>
+        {!loading && !error && (
+          <p className="text-slate-500 text-sm mb-4">
+            <span className="text-slate-900 font-bold">{librosFiltrados.length}</span>{' '}
+            {librosFiltrados.length === 1 ? 'libro encontrado' : 'libros encontrados'}
+            {busqueda && (
+              <span>
+                {' '}
+                para &quot;<strong className="text-slate-800">{busqueda}</strong>&quot;
+              </span>
+            )}
+          </p>
+        )}
 
         {/* Grid */}
-        {librosFiltrados.length > 0 ? (
+        {loading ? (
+          <div className="py-20 text-center text-slate-500 text-sm">Cargando libros...</div>
+        ) : error ? (
+          <div className="py-20 text-center">
+            <p className="text-red-600 font-semibold mb-2">{error}</p>
+            <button
+              onClick={cargarDatos}
+              className="text-blue-600 text-sm font-medium hover:underline"
+            >
+              Reintentar
+            </button>
+          </div>
+        ) : librosFiltrados.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
             {librosFiltrados.map(libro => (
-              <BookCard key={libro.id} libro={libro} />
+              <BookCard
+                key={libro.id}
+                libro={libro}
+                nombreAutor={nombreAutor}
+                nombreGenero={nombreGenero}
+              />
             ))}
           </div>
         ) : (
