@@ -26,8 +26,6 @@ export interface Usuario {
   rol: 'root' | 'administrador' | 'cliente'
 }
 
-export interface 
-
 export interface LoginResponse {
   access_token: string
   usuario: Usuario
