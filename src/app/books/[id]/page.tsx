@@ -1,13 +1,56 @@
 'use client'
 
-import { useState } from 'react'
-import { LIBROS_MOCK, type Libro } from '@/data/libros.mock'
+import { useState, useEffect } from 'react'
+import { useParams } from 'next/navigation'
+import { apiFetch } from '@/services/api.client'
 
-// ─── Mock: libro actual (en producción vendría de params + fetch) ─────────────
-const LIBRO_ACTUAL = LIBROS_MOCK[0]
-const RELACIONADOS = LIBROS_MOCK.filter(
-  l => l.genero === LIBRO_ACTUAL.genero && l.id !== LIBRO_ACTUAL.id
-).slice(0, 4)
+// ─── Tipos de la API ──────────────────────────────────────────────────────────
+interface Libro {
+  id: string
+  titulo: string
+  idAutor: number
+  idGenero: number
+  idEditorial: number
+  anoPublicacion: number
+  precio: number
+  isbn: string
+  idioma: string
+  descripcion?: string
+  imagenPortada?: string
+  estado: string
+}
+interface Autor {
+  id: number
+  nombre: string
+}
+interface Genero {
+  id: number
+  nombre: string
+}
+interface Editorial {
+  id: number
+  nombre: string
+}
+
+// ─── Generar portada ──────────────────────────────────────────────────────────
+const generarColorPortada = (titulo: string) => {
+  const colors = [
+    '#3B82F6',
+    '#EF4444',
+    '#10B981',
+    '#F59E0B',
+    '#8B5CF6',
+    '#06B6D4',
+    '#84CC16',
+    '#F97316',
+  ]
+  const index = titulo.length % colors.length
+  return colors[index]
+}
+
+const generarLetraPortada = (titulo: string) => {
+  return titulo.charAt(0).toUpperCase()
+}
 
 // ─── Iconos ───────────────────────────────────────────────────────────────────
 const BookIcon = ({ size = 20 }: { size?: number }) => (
@@ -199,26 +242,83 @@ const CloseIcon = () => (
   </svg>
 )
 
-// ─── Portada placeholder ──────────────────────────────────────────────────────
-const BookCover = ({ libro, big = false }: { libro: Libro; big?: boolean }) => (
-  <div
-    className={`w-full h-full flex flex-col items-center justify-center gap-3 ${big ? 'p-8' : 'p-3'}`}
-    style={{ backgroundColor: libro.portadaColor }}
-  >
-    <span
-      className={`font-extrabold leading-none select-none ${big ? 'text-9xl' : 'text-5xl'}`}
-      style={{ color: 'rgba(255,255,255,0.15)' }}
+// ─── Portada con imagen o placeholder ──────────────────────────────────────────
+const BookCover = ({ libro, big = false }: { libro: Libro; big?: boolean }) => {
+  const [imageError, setImageError] = useState(false)
+
+  // Verificar si la URL de la imagen es válida
+  const imageUrl = libro.imagenPortada
+  const isValidUrl =
+    imageUrl &&
+    (imageUrl.startsWith('http') || imageUrl.startsWith('https') || imageUrl.startsWith('/'))
+
+  // Si es una URL relativa, agregar el dominio de la API
+  const fullImageUrl =
+    imageUrl && imageUrl.startsWith('/')
+      ? `${process.env.NEXT_PUBLIC_API_URL}${imageUrl}`
+      : imageUrl
+
+  if (isValidUrl && !imageError) {
+    return (
+      <div className="w-full h-full relative overflow-hidden">
+        <img
+          src={fullImageUrl}
+          alt={`Portada de ${libro.titulo}`}
+          className="w-full h-full object-cover"
+          onError={() => {
+            console.log('Error cargando imagen:', fullImageUrl)
+            setImageError(true)
+          }}
+        />
+        <span
+          className={`absolute top-2 left-2 px-2 py-0.5 rounded-md text-xs font-bold border
+          ${
+            libro.estado === 'nuevo'
+              ? 'bg-green-50 text-green-800 border-green-400'
+              : libro.estado === 'agotado'
+                ? 'bg-red-50 text-red-800 border-red-400'
+                : 'bg-yellow-50 text-yellow-800 border-yellow-400'
+          }`}
+        >
+          {libro.estado}
+        </span>
+      </div>
+    )
+  }
+
+  // Fallback: portada generada
+  return (
+    <div
+      className={`w-full h-full flex flex-col items-center justify-center gap-3 ${big ? 'p-8' : 'p-3'} relative`}
+      style={{ backgroundColor: generarColorPortada(libro.titulo) }}
     >
-      {libro.portadaLetra}
-    </span>
-    <span
-      className={`font-semibold text-center leading-tight line-clamp-3 max-w-full ${big ? 'text-sm' : 'text-xs'}`}
-      style={{ color: 'rgba(255,255,255,0.5)' }}
-    >
-      {libro.titulo}
-    </span>
-  </div>
-)
+      <span
+        className={`font-extrabold leading-none select-none ${big ? 'text-9xl' : 'text-5xl'}`}
+        style={{ color: 'rgba(255,255,255,0.15)' }}
+      >
+        {generarLetraPortada(libro.titulo)}
+      </span>
+      <span
+        className={`font-semibold text-center leading-tight line-clamp-3 max-w-full ${big ? 'text-sm' : 'text-xs'}`}
+        style={{ color: 'rgba(255,255,255,0.5)' }}
+      >
+        {libro.titulo}
+      </span>
+      <span
+        className={`absolute top-2 left-2 px-2 py-0.5 rounded-md text-xs font-bold border
+        ${
+          libro.estado === 'nuevo'
+            ? 'bg-green-50 text-green-800 border-green-400'
+            : libro.estado === 'agotado'
+              ? 'bg-red-50 text-red-800 border-red-400'
+              : 'bg-yellow-50 text-yellow-800 border-yellow-400'
+        }`}
+      >
+        {libro.estado}
+      </span>
+    </div>
+  )
+}
 
 // ─── Navbar ───────────────────────────────────────────────────────────────────
 const Navbar = () => {
@@ -281,18 +381,11 @@ const RelatedCard = ({ libro }: { libro: Libro }) => (
   >
     <div className="w-full aspect-[2/3] relative overflow-hidden">
       <BookCover libro={libro} />
-      <span
-        className={`absolute top-2 left-2 px-2 py-0.5 rounded-md text-xs font-bold border
-        ${libro.estado === 'Nuevo' ? 'bg-green-50 text-green-800 border-green-400' : 'bg-yellow-50 text-yellow-800 border-yellow-400'}`}
-      >
-        {libro.estado}
-      </span>
     </div>
     <div className="p-3">
       <p className="text-slate-900 text-sm font-bold leading-snug mb-1 line-clamp-2">
         {libro.titulo}
       </p>
-      <p className="text-slate-500 text-xs mb-2">{libro.autor}</p>
       <p className="text-blue-600 font-bold text-sm">${libro.precio.toLocaleString('es-CO')}</p>
     </div>
   </a>
@@ -300,9 +393,67 @@ const RelatedCard = ({ libro }: { libro: Libro }) => (
 
 // ─── Página principal ─────────────────────────────────────────────────────────
 export default function BookDetailPage() {
-  const libro = LIBRO_ACTUAL
+  const params = useParams()
+  const libroId = params.id as string
+
+  const [libro, setLibro] = useState<Libro | null>(null)
+  const [autores, setAutores] = useState<Autor[]>([])
+  const [generos, setGeneros] = useState<Genero[]>([])
+  const [editoriales, setEditoriales] = useState<Editorial[]>([])
+  const [librosRelacionados, setLibrosRelacionados] = useState<Libro[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [reservando, setReservando] = useState(false)
   const [agregando, setAgregando] = useState(false)
+
+  useEffect(() => {
+    cargarDatos()
+  }, [libroId])
+
+  const cargarDatos = async () => {
+    if (!libroId || typeof libroId !== 'string') {
+      setError('ID de libro inválido')
+      setLoading(false)
+      return
+    }
+
+    setLoading(true)
+    setError('')
+    try {
+      // Cargar datos básicos
+      const [libroData, autoresData, generosData, editorialesData] = await Promise.all([
+        apiFetch<Libro>(`/libros/${libroId}`),
+        apiFetch<Autor[]>('/autores'),
+        apiFetch<Genero[]>('/generos'),
+        apiFetch<Editorial[]>('/editoriales'),
+      ])
+
+      setLibro(libroData)
+      setAutores(autoresData)
+      setGeneros(generosData)
+      setEditoriales(editorialesData)
+
+      console.log('Libro cargado:', libroData)
+      console.log('Imagen portada:', libroData.imagenPortada)
+
+      // Cargar libros relacionados del mismo género
+      const todosLibros = await apiFetch<Libro[]>('/libros')
+      const relacionados = todosLibros
+        .filter(l => l.idGenero === libroData.idGenero && l.id !== libroData.id)
+        .slice(0, 4)
+      setLibrosRelacionados(relacionados)
+    } catch (err) {
+      setError('Error al cargar los datos del libro')
+      console.error('Error loading book data:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const nombreAutor = (id: number) => autores.find(a => a.id === id)?.nombre ?? `Autor #${id}`
+  const nombreGenero = (id: number) => generos.find(g => g.id === id)?.nombre ?? `Género #${id}`
+  const nombreEditorial = (id: number) =>
+    editoriales.find(e => e.id === id)?.nombre ?? `Editorial #${id}`
 
   const handleReservar = () => {
     setReservando(true)
@@ -314,6 +465,36 @@ export default function BookDetailPage() {
     setAgregando(true)
     setTimeout(() => setAgregando(false), 1500)
     // TODO: conectar con carrito.service.ts
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-slate-600">Cargando libro...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error || !libro) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-red-600 font-semibold mb-4">{error || 'Libro no encontrado'}</p>
+            <a href="/" className="text-blue-600 hover:underline">
+              Volver al catálogo
+            </a>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -349,7 +530,13 @@ export default function BookDetailPage() {
                 {/* Badge estado */}
                 <span
                   className={`inline-block px-2 py-0.5 rounded-md text-xs font-bold border mb-4
-                  ${libro.estado === 'Nuevo' ? 'bg-green-50 text-green-800 border-green-400' : 'bg-yellow-50 text-yellow-800 border-yellow-400'}`}
+                  ${
+                    libro.estado === 'nuevo'
+                      ? 'bg-green-50 text-green-800 border-green-400'
+                      : libro.estado === 'agotado'
+                        ? 'bg-red-50 text-red-800 border-red-400'
+                        : 'bg-yellow-50 text-yellow-800 border-yellow-400'
+                  }`}
                 >
                   {libro.estado}
                 </span>
@@ -358,15 +545,20 @@ export default function BookDetailPage() {
                   {libro.titulo}
                 </h1>
                 <p className="text-slate-500 text-base mb-6">
-                  por <span className="text-slate-700 font-semibold">{libro.autor}</span>
+                  por{' '}
+                  <span className="text-slate-700 font-semibold">{nombreAutor(libro.idAutor)}</span>
                 </p>
 
                 {/* Metadatos */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
                   {[
-                    { icon: <TagIcon />, label: 'Género', value: libro.genero },
+                    { icon: <TagIcon />, label: 'Género', value: nombreGenero(libro.idGenero) },
                     { icon: <CalendarIcon />, label: 'Año', value: libro.anoPublicacion },
-                    { icon: <BuildingIcon />, label: 'Editorial', value: libro.editorial },
+                    {
+                      icon: <BuildingIcon />,
+                      label: 'Editorial',
+                      value: nombreEditorial(libro.idEditorial),
+                    },
                     { icon: <TagIcon />, label: 'Idioma', value: libro.idioma },
                   ].map(m => (
                     <div key={m.label} className="bg-slate-50 rounded-xl p-3">
@@ -437,13 +629,13 @@ export default function BookDetailPage() {
         </div>
 
         {/* ── Libros relacionados ── */}
-        {RELACIONADOS.length > 0 && (
+        {librosRelacionados.length > 0 && (
           <section>
             <h2 className="text-slate-900 text-xl font-bold mb-5">
-              Más libros de <span className="text-blue-600">{libro.genero}</span>
+              Más libros de <span className="text-blue-600">{nombreGenero(libro.idGenero)}</span>
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              {RELACIONADOS.map(r => (
+              {librosRelacionados.map(r => (
                 <RelatedCard key={r.id} libro={r} />
               ))}
             </div>
