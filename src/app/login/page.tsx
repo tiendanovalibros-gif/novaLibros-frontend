@@ -1,8 +1,8 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import * as S from "@/styles/login.styles";
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import * as S from '@/styles/login.styles'
 import {
   btnPrimary,
   btnPrimaryDisabled,
@@ -20,7 +20,7 @@ import {
   logoBox,
   logoRow,
   logoText,
-} from "@/styles/auth.styles";
+} from '@/styles/auth.styles'
 
 const BookIcon = () => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
@@ -39,7 +39,7 @@ const BookIcon = () => (
       strokeLinejoin="round"
     />
   </svg>
-);
+)
 
 const EyeIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -51,7 +51,7 @@ const EyeIcon = () => (
     />
     <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" />
   </svg>
-);
+)
 
 const EyeOffIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -77,7 +77,7 @@ const EyeOffIcon = () => (
       strokeLinecap="round"
     />
   </svg>
-);
+)
 
 const ErrorIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -93,74 +93,86 @@ const ErrorIcon = () => (
       strokeLinecap="round"
     />
   </svg>
-);
+)
 
 const STATS = [
-  { num: "+5.000", label: "Títulos" },
-  { num: "+800", label: "Autores" },
-  { num: "24h", label: "Reservas" },
-];
+  { num: '+5.000', label: 'Títulos' },
+  { num: '+800', label: 'Autores' },
+  { num: '24h', label: 'Reservas' },
+]
 
 export default function LoginPage() {
-  const router = useRouter();
-  const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const router = useRouter()
+  const [showPassword, setShowPassword] = useState(false)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
+    e.preventDefault()
+    setError('')
 
     if (!email || !password) {
-      setError("Por favor completa todos los campos.");
-      return;
+      setError('Por favor completa todos los campos.')
+      return
     }
 
-    setLoading(true);
+    setLoading(true)
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL;
+    const API_URL = process.env.NEXT_PUBLIC_API_URL
 
     try {
       const res = await fetch(`${API_URL}/users/login`, {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           correo: email,
           contrasena: password,
         }),
-      });
+      })
 
       if (!res.ok) {
-        let message = "Error al iniciar sesión";
+        let message = 'Error al iniciar sesión'
         try {
-          const data = await res.json();
-          if (data && typeof data.message === "string") {
-            message = data.message;
+          const data = await res.json()
+          if (data && typeof data.message === 'string') {
+            message = data.message
           }
         } catch {
           // ignorar error al parsear JSON
         }
-        throw new Error(message);
+        throw new Error(message)
       }
 
-      const data = await res.json();
-      // Aquí podrías guardar el token y datos de usuario, por ejemplo:
-      // localStorage.setItem('token', data.access_token)
-      console.log("Login exitoso:", data);
+      const data = await res.json()
+      // Guardar token JWT en cookie (simulado aquí, normalmente en httpOnly cookie)
+      document.cookie = `auth_token=${data.access_token}; path=/; max-age=3600`
 
-      // Redirigir a la página principal
-      router.push("/");
+      // Guardar bootstrap token en localStorage si viene en la respuesta (usuarios root)
+      if (data.bootstrap_token) {
+        localStorage.setItem('bootstrap_token', data.bootstrap_token)
+      }
+
+      console.log('Login exitoso:', data)
+
+      // validar el rol del usuario para poder redireccionar a la página correcta
+      if (data.usuario.rol === 'administrador') {
+        router.push('/admin')
+      } else if (data.usuario.rol === 'root') {
+        router.push('/root')
+      } else {
+        router.push('/')
+      }
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Error al iniciar sesión";
-      setError(message);
+      const message = err instanceof Error ? err.message : 'Error al iniciar sesión'
+      setError(message)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
     <div style={{ ...S.root, fontFamily: "'DM Sans', 'Segoe UI', sans-serif" }}>
@@ -171,7 +183,7 @@ export default function LoginPage() {
         <div style={S.circleBottomRight} />
 
         {/* Logo */}
-        <div style={{ ...logoRow, position: "relative", zIndex: 1 }}>
+        <div style={{ ...logoRow, position: 'relative', zIndex: 1 }}>
           <div style={logoBox}>
             <BookIcon />
           </div>
@@ -233,13 +245,13 @@ export default function LoginPage() {
             {/* Contraseña */}
             <div style={field}>
               <label style={label}>Contraseña</label>
-              <div style={{ position: "relative" }}>
+              <div style={{ position: 'relative' }}>
                 <input
-                  type={showPassword ? "text" : "password"}
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  style={{ ...getInputStyle(false), paddingRight: "44px" }}
+                  style={{ ...getInputStyle(false), paddingRight: '44px' }}
                   onFocus={e => inputFocusOn(e, false)}
                   onBlur={e => inputFocusOff(e, false)}
                 />
@@ -266,13 +278,13 @@ export default function LoginPage() {
               disabled={loading}
               style={loading ? btnPrimaryDisabled : btnPrimary}
               onMouseEnter={e => {
-                if (!loading) (e.target as HTMLButtonElement).style.backgroundColor = "#1D4ED8";
+                if (!loading) (e.target as HTMLButtonElement).style.backgroundColor = '#1D4ED8'
               }}
               onMouseLeave={e => {
-                if (!loading) (e.target as HTMLButtonElement).style.backgroundColor = "#2563EB";
+                if (!loading) (e.target as HTMLButtonElement).style.backgroundColor = '#2563EB'
               }}
             >
-              {loading ? "Ingresando..." : "Iniciar sesión"}
+              {loading ? 'Ingresando...' : 'Iniciar sesión'}
             </button>
           </form>
 
@@ -285,7 +297,7 @@ export default function LoginPage() {
 
           {/* Registro */}
           <p style={S.bottomText}>
-            ¿No tienes cuenta?{" "}
+            ¿No tienes cuenta?{' '}
             <a href="/register" style={S.bottomLink}>
               Regístrate gratis
             </a>
@@ -295,5 +307,5 @@ export default function LoginPage() {
 
       <style>{globalStyles + S.responsiveStyles}</style>
     </div>
-  );
+  )
 }
