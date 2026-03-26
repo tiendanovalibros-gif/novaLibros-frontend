@@ -372,7 +372,9 @@ export default function AdminLibrosPage() {
       <div className="min-h-screen flex items-center justify-center bg-slate-100 text-slate-700">
         <div className="p-6 bg-white rounded-xl shadow-md text-center">
           <p className="font-semibold mb-2">Debes iniciar sesión para ver esta página.</p>
-          <a href="/login" className="text-blue-600 underline">Ir a iniciar sesión</a>
+          <a href="/login" className="text-blue-600 underline">
+            Ir a iniciar sesión
+          </a>
         </div>
       </div>
     )
