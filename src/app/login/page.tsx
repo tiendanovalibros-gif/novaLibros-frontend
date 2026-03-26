@@ -1,11 +1,27 @@
 'use client'
 
-import { useState } from 'react';
-import * as S from '@/styles/login.styles';
-import { btnPrimary, btnPrimaryDisabled, alertError, alertErrorText,
-         dividerRow, dividerLine, dividerText, label, field,
-         getInputStyle, inputFocusOn, inputFocusOff, globalStyles,
-         logoBox, logoRow, logoText } from '@/styles/auth.styles';
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/context/auth.context'
+import * as S from '@/styles/login.styles'
+import {
+  btnPrimary,
+  btnPrimaryDisabled,
+  alertError,
+  alertErrorText,
+  dividerRow,
+  dividerLine,
+  dividerText,
+  label,
+  field,
+  getInputStyle,
+  inputFocusOn,
+  inputFocusOff,
+  globalStyles,
+  logoBox,
+  logoRow,
+  logoText,
+} from '@/styles/auth.styles'
 
 const BookIcon = () => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
@@ -87,33 +103,44 @@ const STATS = [
 ]
 
 export default function LoginPage() {
-  const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail]               = useState('');
-  const [password, setPassword]         = useState('');
-  const [error, setError]               = useState('');
-  const [loading, setLoading]           = useState(false);
+  const router = useRouter()
+  const { login } = useAuth()
+
+  const [showPassword, setShowPassword] = useState(false)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
+    e.preventDefault()
+    setError('')
+
     if (!email || !password) {
-      setError('Por favor completa todos los campos.');
-      return;
+      setError('Por favor completa todos los campos.')
+      return
     }
-    setLoading(true);
-    // TODO: conectar con auth.service.ts yess
-    setTimeout(() => setLoading(false), 1500);
-  };
+
+    setLoading(true)
+    try {
+      await login({ correo: email, contrasena: password })
+      router.push('/')
+    } catch (err) {
+      console.error('Login error', err)
+      setError('Credenciales incorrectas o el servidor no está disponible.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <div style={{ ...S.root, fontFamily: "'DM Sans', 'Segoe UI', sans-serif" }}>
-      {/* ── Panel izquierdo ── */}
+      {/* Panel izquierdo */}
       <div style={S.leftPanel} className="login-left-panel">
         <div style={S.circleTopRight} />
         <div style={S.circleBottomLeft} />
         <div style={S.circleBottomRight} />
 
-        {/* Logo */}
         <div style={{ ...logoRow, position: 'relative', zIndex: 1 }}>
           <div style={logoBox}>
             <BookIcon />
@@ -121,7 +148,6 @@ export default function LoginPage() {
           <span style={logoText}>NovaLibros</span>
         </div>
 
-        {/* Hero text */}
         <div style={S.leftContent}>
           <p style={S.leftEyebrow}>Tu librería en línea</p>
           <h2 style={S.leftHeading}>
@@ -134,7 +160,6 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Stats */}
         <div style={S.statsRow}>
           {STATS.map(stat => (
             <div key={stat.label}>
@@ -145,7 +170,7 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* ── Panel derecho ── */}
+      {/* Panel derecho */}
       <div style={S.rightPanel}>
         <div style={S.formWrapper}>
           <h1 style={S.heading}>Bienvenido de vuelta</h1>
@@ -159,7 +184,6 @@ export default function LoginPage() {
           )}
 
           <form onSubmit={handleSubmit}>
-            {/* Email */}
             <div style={field}>
               <label style={label}>Correo electrónico</label>
               <input
@@ -173,7 +197,6 @@ export default function LoginPage() {
               />
             </div>
 
-            {/* Contraseña */}
             <div style={field}>
               <label style={label}>Contraseña</label>
               <div style={{ position: 'relative' }}>
@@ -196,14 +219,12 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Olvidé contraseña */}
             <div style={S.forgotRow}>
               <a href="/forgot-password" style={S.forgotLink}>
                 ¿Olvidaste tu contraseña?
               </a>
             </div>
 
-            {/* Submit */}
             <button
               type="submit"
               disabled={loading}
@@ -219,14 +240,12 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Divider */}
           <div style={dividerRow}>
             <div style={dividerLine} />
             <span style={dividerText}>o</span>
             <div style={dividerLine} />
           </div>
 
-          {/* Registro */}
           <p style={S.bottomText}>
             ¿No tienes cuenta?{' '}
             <a href="/register" style={S.bottomLink}>
