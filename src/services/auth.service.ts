@@ -31,26 +31,40 @@ export interface LoginResponse {
   usuario: Usuario
 }
 
+export function persistToken(token: string): void {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('auth_token', token)
+  }
+}
+
+export function clearPersistedToken(): void {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('auth_token')
+  }
+}
+
 export async function saveToken(token: string): Promise<void> {
   await fetch('/api/auth/set-cookie', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ token }),
   })
+  persistToken(token)
 }
 
 export async function clearToken(): Promise<void> {
   await fetch('/api/auth/clear-cookie', { method: 'POST' })
+  clearPersistedToken()
 }
 
 // Login retorna el usuario directo — no hay que llamar /me después
-export async function login(payload: LoginPayload): Promise<Usuario> {
+export async function login(payload: LoginPayload): Promise<LoginResponse> {
   const data = await apiFetch<LoginResponse>('/users/login', {
     method: 'POST',
     body: JSON.stringify(payload),
   })
   await saveToken(data.access_token)
-  return data.usuario
+  return data
 }
 
 export async function register(payload: RegisterPayload): Promise<void> {

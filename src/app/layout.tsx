@@ -18,6 +18,8 @@ export const metadata: Metadata = {
   description: 'Tienda Novalibros',
 }
 
+import { AuthProvider } from '@/context/auth.context'
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -25,7 +27,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>{children}</body>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   )
 }

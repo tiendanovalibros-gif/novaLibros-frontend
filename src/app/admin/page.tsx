@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/context/auth.context'
+import { apiFetch } from '@/services/api.client'
 
 interface Libro {
   id: string
@@ -46,27 +47,6 @@ const LIBRO_VACIO = {
   descripcion: '',
   imagenPortada: '',
   estado: 'nuevo',
-}
-
-function getToken(): string {
-  if (typeof document === 'undefined') return ''
-  const match = document.cookie.match(/auth_token=([^;]+)/)
-  return match ? match[1] : ''
-}
-
-async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const token = getToken()
-  const res = await fetch(`${API_URL}${endpoint}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options.headers,
-    },
-    ...options,
-  })
-  const data = await res.json()
-  if (!res.ok) throw new Error(data?.message || 'Error en el servidor')
-  return data
 }
 
 const BookIcon = () => (
@@ -302,6 +282,9 @@ const Modal = ({
 )
 
 export default function AdminLibrosPage() {
+  const { user, isAuthenticated, loading: authLoading } = useAuth()
+  const router = useRouter()
+
   const [libros, setLibros] = useState<Libro[]>([])
   const [autores, setAutores] = useState<Autor[]>([])
   const [generos, setGeneros] = useState<Genero[]>([])
@@ -316,10 +299,6 @@ export default function AdminLibrosPage() {
   const [formError, setFormError] = useState('')
   const [saving, setSaving] = useState(false)
   const [showAgotados, setShowAgotados] = useState(false)
-
-  useEffect(() => {
-    cargarDatos()
-  }, [])
 
   const cargarDatos = async () => {
     setLoading(true)
@@ -342,6 +321,22 @@ export default function AdminLibrosPage() {
     }
   }
 
+  useEffect(() => {
+    if (authLoading) return
+
+    if (!isAuthenticated) {
+      router.push('/login')
+      return
+    }
+
+    if (user && user.rol !== 'root' && user.rol !== 'administrador') {
+      router.push('/')
+      return
+    }
+
+    cargarDatos()
+  }, [authLoading, isAuthenticated, user, router])
+
   const nombreAutor = (id: number) => autores.find(a => a.id === id)?.nombre ?? `Autor #${id}`
   const nombreGenero = (id: number) => generos.find(g => g.id === id)?.nombre ?? `Género #${id}`
 
@@ -361,6 +356,38 @@ export default function AdminLibrosPage() {
   )
 
   const librosAgotados = useMemo(() => libros.filter(l => l.estado === 'agotado'), [libros])
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-100 text-slate-700">
+        <div className="p-6 bg-white rounded-xl shadow-md text-center">
+          <p className="font-semibold mb-2">Cargando sesión...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-100 text-slate-700">
+        <div className="p-6 bg-white rounded-xl shadow-md text-center">
+          <p className="font-semibold mb-2">Debes iniciar sesión para ver esta página.</p>
+          <a href="/login" className="text-blue-600 underline">Ir a iniciar sesión</a>
+        </div>
+      </div>
+    )
+  }
+
+  if (user && user.rol !== 'root' && user.rol !== 'administrador') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-100 text-slate-700">
+        <div className="p-6 bg-white rounded-xl shadow-md text-center">
+          <p className="font-semibold mb-2">Acceso denegado.</p>
+          <p>Solo los administradores pueden acceder a esta sección.</p>
+        </div>
+      </div>
+    )
+  }
 
   const cerrar = () => {
     setDialogMode(null)

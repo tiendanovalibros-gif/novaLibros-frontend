@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { apiFetch } from '@/services/api.client'
+import { useAuth } from '@/context/auth.context'
 
 // ─── Tipos de la API ──────────────────────────────────────────────────────────
 interface Libro {
@@ -263,54 +264,88 @@ const BookCover = ({ libro }: { libro: Libro }) => {
 }
 
 // ─── Tarjeta de libro ─────────────────────────────────────────────────────────
+type UserRole = 'root' | 'administrador' | 'cliente' | null
+
 const BookCard = ({
   libro,
   nombreAutor,
   nombreGenero,
+  isAuthenticated,
+  userRole,
 }: {
   libro: Libro
   nombreAutor: (id: number) => string
   nombreGenero: (id: number) => string
-}) => (
-  <a
-    href={`/books/${libro.id}`}
-    className="bg-white border border-slate-200 rounded-xl overflow-hidden transition-all duration-150 hover:-translate-y-1 hover:shadow-lg group block no-underline"
-  >
-    <div className="w-full aspect-[2/3] relative overflow-hidden">
-      <BookCover libro={libro} />
-    </div>
+  isAuthenticated: boolean
+  userRole: UserRole
+}) => {
+  const canAddToCart = isAuthenticated && userRole === 'cliente'
+  const cartTooltip = !isAuthenticated
+    ? 'Inicia sesión para agregar al carrito'
+    : userRole === 'cliente'
+      ? 'Agregar al carrito'
+      : 'Solo clientes pueden agregar al carrito'
 
-    <div className="p-3">
-      <p className="text-slate-900 text-sm font-bold leading-snug mb-1 line-clamp-2">
-        {libro.titulo}
-      </p>
-      <p className="text-slate-500 text-xs mb-2">{nombreAutor(libro.idAutor)}</p>
-      <span className="inline-block bg-blue-50 text-blue-800 text-xs font-medium px-2 py-0.5 rounded mb-3">
-        {nombreGenero(libro.idGenero)}
-      </span>
+  return (
+    <a
+      href={`/books/${libro.id}`}
+      className="bg-white border border-slate-200 rounded-xl overflow-hidden transition-all duration-150 hover:-translate-y-1 hover:shadow-lg group block no-underline"
+    >
+      <div className="w-full aspect-[2/3] relative overflow-hidden">
+        <BookCover libro={libro} />
+      </div>
 
-      <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-        <div>
-          <p className="text-blue-600 font-bold text-base">
-            ${libro.precio.toLocaleString('es-CO')}
-          </p>
-          <div className="flex items-center gap-1 text-slate-400 mt-0.5">
-            <LockIcon />
-            <span className="text-xs italic">Inicia sesión para comprar</span>
+      <div className="p-3">
+        <p className="text-slate-900 text-sm font-bold leading-snug mb-1 line-clamp-2">
+          {libro.titulo}
+        </p>
+        <p className="text-slate-500 text-xs mb-2">{nombreAutor(libro.idAutor)}</p>
+        <span className="inline-block bg-blue-50 text-blue-800 text-xs font-medium px-2 py-0.5 rounded mb-3">
+          {nombreGenero(libro.idGenero)}
+        </span>
+
+        <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+          <div>
+            <p className="text-blue-600 font-bold text-base">
+              ${libro.precio.toLocaleString('es-CO')}
+            </p>
+            <div className="flex items-center gap-1 mt-0.5 text-xs">
+              {!canAddToCart ? (
+                <>
+                  <LockIcon />
+                  <span className="italic text-slate-400">
+                    {isAuthenticated
+                      ? 'Solo clientes pueden comprar'
+                      : 'Inicia sesión para comprar'}
+                  </span>
+                </>
+              ) : (
+                <span className="text-green-500 font-medium">Disponible para comprar</span>
+              )}
+            </div>
+          </div>
+          {/* e.preventDefault() para que el clic en el carrito no navegue */}
+          <div
+            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
+              canAddToCart
+                ? 'bg-blue-600 text-white cursor-pointer hover:bg-blue-700'
+                : 'bg-slate-100 text-slate-400 opacity-75 cursor-not-allowed group-hover:bg-blue-50'
+            }`}
+            title={cartTooltip}
+            onClick={e => {
+              e.preventDefault()
+              if (!canAddToCart) return
+              // TODO: implementar lógica real para agregar al carrito
+              alert(`Agregaste al carrito: ${libro.titulo}`)
+            }}
+          >
+            <CartIcon />
           </div>
         </div>
-        {/* e.preventDefault() para que el clic en el carrito no navegue */}
-        <div
-          className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center opacity-50 cursor-not-allowed group-hover:bg-blue-50 transition-colors"
-          title="Inicia sesión para agregar al carrito"
-          onClick={e => e.preventDefault()}
-        >
-          <CartIcon />
-        </div>
       </div>
-    </div>
-  </a>
-)
+    </a>
+  )
+}
 
 // ─── Página principal ─────────────────────────────────────────────────────────
 export default function CataloguePage() {
@@ -326,6 +361,12 @@ export default function CataloguePage() {
   const [rangoIdx, setRangoIdx] = useState(0)
   const [orden, setOrden] = useState('relevancia')
   const [menuAbierto, setMenuAbierto] = useState(false)
+
+  const { user, isAuthenticated, logout } = useAuth()
+  const nombreVisible = user?.nombre ? `${user.nombre} ${user.apellido}`.trim() : ''
+  const inicialesPerfil = user
+    ? `${user.nombre?.charAt(0).toUpperCase() ?? ''}${user.apellido?.charAt(0).toUpperCase() ?? ''}`
+    : ''
 
   useEffect(() => {
     cargarDatos()
@@ -422,18 +463,69 @@ export default function CataloguePage() {
           </div>
 
           <div className="hidden sm:flex items-center gap-3">
-            <a
-              href="/login"
-              className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 hover:bg-slate-50 transition-colors"
-            >
-              Iniciar sesión
-            </a>
-            <a
-              href="/register"
-              className="px-4 py-2 bg-blue-600 rounded-lg text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
-            >
-              Registrarse
-            </a>
+            {isAuthenticated ? (
+              <>
+                {user?.rol === 'root' || user?.rol === 'administrador' ? (
+                  <a
+                    href="/admin"
+                    className="px-3 py-2 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 hover:bg-slate-50 transition-colors flex items-center gap-2"
+                    title="Dashboard de administración"
+                  >
+                    🛠️ Admin
+                  </a>
+                ) : (
+                  <a
+                    href="/carrito"
+                    className="px-3 py-2 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 hover:bg-slate-50 transition-colors flex items-center gap-2"
+                    title="Carrito"
+                  >
+                    <CartIcon />
+                    Carrito
+                  </a>
+                )}
+
+                <button
+                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 hover:bg-slate-50 transition-colors relative"
+                  title="Notificaciones"
+                >
+                  🔔
+                  <span className="absolute -top-1 -right-1 w-4 h-4 text-[10px] leading-4 rounded-full bg-red-500 text-white flex items-center justify-center">
+                    3
+                  </span>
+                </button>
+
+                <div className="flex items-center gap-2 px-3 py-2 border border-slate-300 rounded-full bg-slate-50">
+                  <span className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold">
+                    {inicialesPerfil || 'U'}
+                  </span>
+                  <span className="text-sm font-semibold text-slate-700 truncate max-w-[120px]">
+                    {nombreVisible || 'Usuario'}
+                  </span>
+                </div>
+
+                <button
+                  onClick={() => logout()}
+                  className="px-3 py-2 border border-red-300 text-red-700 rounded-lg text-sm font-semibold hover:bg-red-50"
+                >
+                  Cerrar sesión
+                </button>
+              </>
+            ) : (
+              <>
+                <a
+                  href="/login"
+                  className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 hover:bg-slate-50 transition-colors"
+                >
+                  Iniciar sesión
+                </a>
+                <a
+                  href="/register"
+                  className="px-4 py-2 bg-blue-600 rounded-lg text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+                >
+                  Registrarse
+                </a>
+              </>
+            )}
           </div>
 
           <button
@@ -446,18 +538,52 @@ export default function CataloguePage() {
 
         {menuAbierto && (
           <div className="sm:hidden bg-white border-t border-slate-100 px-4 py-4 flex flex-col gap-3">
-            <a
-              href="/login"
-              className="w-full text-center py-2.5 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800"
-            >
-              Iniciar sesión
-            </a>
-            <a
-              href="/register"
-              className="w-full text-center py-2.5 bg-blue-600 rounded-lg text-sm font-semibold text-white"
-            >
-              Registrarse
-            </a>
+            {isAuthenticated ? (
+              <>
+                {(user?.rol === 'root' || user?.rol === 'administrador') ? (
+                  <a
+                    href="/admin"
+                    className="w-full text-center py-2.5 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800"
+                  >
+                    Dashboard Admin
+                  </a>
+                ) : (
+                  <a
+                    href="/carrito"
+                    className="w-full text-center py-2.5 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800"
+                  >
+                    Carrito
+                  </a>
+                )}
+                <a
+                  href="/profile"
+                  className="w-full text-center py-2.5 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800"
+                >
+                  Perfil
+                </a>
+                <button
+                  className="w-full text-center py-2.5 bg-red-100 text-red-700 rounded-lg font-semibold"
+                  onClick={() => logout()}
+                >
+                  Cerrar sesión
+                </button>
+              </>
+            ) : (
+              <>
+                <a
+                  href="/login"
+                  className="w-full text-center py-2.5 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800"
+                >
+                  Iniciar sesión
+                </a>
+                <a
+                  href="/register"
+                  className="w-full text-center py-2.5 bg-blue-600 rounded-lg text-sm font-semibold text-white"
+                >
+                  Registrarse
+                </a>
+              </>
+            )}
           </div>
         )}
       </nav>
@@ -613,6 +739,8 @@ export default function CataloguePage() {
                 libro={libro}
                 nombreAutor={nombreAutor}
                 nombreGenero={nombreGenero}
+                isAuthenticated={isAuthenticated}
+                userRole={user?.rol ?? null}
               />
             ))}
           </div>
@@ -631,29 +759,31 @@ export default function CataloguePage() {
         )}
 
         {/* Banner CTA */}
-        <div className="mt-12 bg-slate-700 rounded-2xl p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-          <div>
-            <h3 className="text-white text-lg font-bold mb-1">¿Listo para empezar?</h3>
-            <p className="text-slate-400 text-sm leading-relaxed max-w-md">
-              Regístrate gratis para comprar, reservar libros y recibir recomendaciones
-              personalizadas.
-            </p>
+        {!isAuthenticated && (
+          <div className="mt-12 bg-slate-700 rounded-2xl p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+            <div>
+              <h3 className="text-white text-lg font-bold mb-1">¿Listo para empezar?</h3>
+              <p className="text-slate-400 text-sm leading-relaxed max-w-md">
+                Regístrate gratis para comprar, reservar libros y recibir recomendaciones
+                personalizadas.
+              </p>
+            </div>
+            <div className="flex gap-3 w-full sm:w-auto shrink-0">
+              <a
+                href="/register"
+                className="flex-1 sm:flex-none text-center px-5 py-2.5 bg-blue-600 rounded-lg text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+              >
+                Crear cuenta gratis
+              </a>
+              <a
+                href="/login"
+                className="flex-1 sm:flex-none text-center px-5 py-2.5 border border-slate-500 rounded-lg text-sm font-semibold text-white hover:border-slate-400 transition-colors"
+              >
+                Iniciar sesión
+              </a>
+            </div>
           </div>
-          <div className="flex gap-3 w-full sm:w-auto shrink-0">
-            <a
-              href="/register"
-              className="flex-1 sm:flex-none text-center px-5 py-2.5 bg-blue-600 rounded-lg text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
-            >
-              Crear cuenta gratis
-            </a>
-            <a
-              href="/login"
-              className="flex-1 sm:flex-none text-center px-5 py-2.5 border border-slate-500 rounded-lg text-sm font-semibold text-white hover:border-slate-400 transition-colors"
-            >
-              Iniciar sesión
-            </a>
-          </div>
-        </div>
+        )}
       </main>
 
       {/* ── Footer ── */}
