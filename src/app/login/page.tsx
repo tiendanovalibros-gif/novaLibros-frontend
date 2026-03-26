@@ -1,27 +1,11 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { useAuth } from '@/context/auth.context'
-import * as S from '@/styles/login.styles'
-import {
-  btnPrimary,
-  btnPrimaryDisabled,
-  alertError,
-  alertErrorText,
-  dividerRow,
-  dividerLine,
-  dividerText,
-  label,
-  field,
-  getInputStyle,
-  inputFocusOn,
-  inputFocusOff,
-  globalStyles,
-  logoBox,
-  logoRow,
-  logoText,
-} from '@/styles/auth.styles'
+import { useState } from 'react';
+import * as S from '@/styles/login.styles';
+import { btnPrimary, btnPrimaryDisabled, alertError, alertErrorText,
+         dividerRow, dividerLine, dividerText, label, field,
+         getInputStyle, inputFocusOn, inputFocusOff, globalStyles,
+         logoBox, logoRow, logoText } from '@/styles/auth.styles';
 
 const BookIcon = () => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
@@ -103,34 +87,23 @@ const STATS = [
 ]
 
 export default function LoginPage() {
-  const router = useRouter()
-  const { login } = useAuth()
-
-  const [showPassword, setShowPassword] = useState(false)
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail]               = useState('');
+  const [password, setPassword]         = useState('');
+  const [error, setError]               = useState('');
+  const [loading, setLoading]           = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
+    e.preventDefault();
+    setError('');
     if (!email || !password) {
-      setError('Por favor completa todos los campos.')
-      return
+      setError('Por favor completa todos los campos.');
+      return;
     }
-
-    setLoading(true)
-    try {
-      await login({ correo: email, contrasena: password })
-      router.push('/')
-    } catch (err) {
-      console.error('Login error', err)
-      setError('Credenciales incorrectas o el servidor no está disponible.')
-    } finally {
-      setLoading(false)
-    }
-  }
+    setLoading(true);
+    // TODO: conectar con auth.service.ts yess
+    setTimeout(() => setLoading(false), 1500);
+  };
 
   return (
     <div style={{ ...S.root, fontFamily: "'DM Sans', 'Segoe UI', sans-serif" }}>
