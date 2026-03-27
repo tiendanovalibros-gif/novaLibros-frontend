@@ -178,7 +178,6 @@ export default function RegisterPage() {
   const [errors, setErrors] = useState<FormErrors>({})
   const [form, setForm] = useState<FormData>(INITIAL_FORM)
   const router = useRouter()
-  const [error, setError] = useState('')
 
   const set = (field: keyof FormData, value: string | boolean | string[]) => {
     setForm(prev => ({ ...prev, [field]: value }))
@@ -275,7 +274,7 @@ export default function RegisterPage() {
       router.push('/login')
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error al iniciar sesión'
-      setError(message)
+      console.error(message) // Log the error instead
     } finally {
       setLoading(false)
     }
