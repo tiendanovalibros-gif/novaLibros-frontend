@@ -465,7 +465,7 @@ export default function CataloguePage() {
           <div className="hidden sm:flex items-center gap-3">
             {isAuthenticated ? (
               <>
-                {user?.rol === 'root' || user?.rol === 'administrador' ? (
+                { user?.rol === 'administrador' ? (
                   <a
                     href="/admin"
                     className="px-3 py-2 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 hover:bg-slate-50 transition-colors flex items-center gap-2"
