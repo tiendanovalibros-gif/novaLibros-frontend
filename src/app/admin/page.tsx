@@ -328,7 +328,7 @@ export default function AdminLibrosPage() {
       // Transformar libros para asegurar que idGeneros sea siempre un array
       const librosTransformados = l.map(libro => ({
         ...libro,
-        idGeneros: Array.isArray(libro.idGeneros) ? libro.idGeneros : []
+        idGeneros: Array.isArray(libro.idGeneros) ? libro.idGeneros : [],
       }))
 
       setLibros(librosTransformados)
@@ -552,7 +552,7 @@ export default function AdminLibrosPage() {
       // Transformar la respuesta para asegurar que idGeneros sea un array
       const libroCreado = {
         ...nuevo,
-        idGeneros: Array.isArray(nuevo.idGeneros) ? nuevo.idGeneros : []
+        idGeneros: Array.isArray(nuevo.idGeneros) ? nuevo.idGeneros : [],
       }
 
       setLibros(prev => [libroCreado, ...prev])
@@ -579,7 +579,7 @@ export default function AdminLibrosPage() {
       // Transformar la respuesta para asegurar que idGeneros sea un array
       const libroActualizado = {
         ...u,
-        idGeneros: Array.isArray(u.idGeneros) ? u.idGeneros : []
+        idGeneros: Array.isArray(u.idGeneros) ? u.idGeneros : [],
       }
 
       setLibros(prev => prev.map(l => (l.id === libroActual.id ? libroActualizado : l)))
