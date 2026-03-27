@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useAuth } from '@/context/auth.context'
 import * as S from '@/styles/login.styles'
 import {
   btnPrimary,
@@ -103,6 +104,8 @@ const STATS = [
 
 export default function LoginPage() {
   const router = useRouter()
+  const { login } = useAuth()
+
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -119,56 +122,12 @@ export default function LoginPage() {
     }
 
     setLoading(true)
-
-    const API_URL = process.env.NEXT_PUBLIC_API_URL
-
     try {
-      const res = await fetch(`${API_URL}/users/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          correo: email,
-          contrasena: password,
-        }),
-      })
-
-      if (!res.ok) {
-        let message = 'Error al iniciar sesión'
-        try {
-          const data = await res.json()
-          if (data && typeof data.message === 'string') {
-            message = data.message
-          }
-        } catch {
-          // ignorar error al parsear JSON
-        }
-        throw new Error(message)
-      }
-
-      const data = await res.json()
-      // Guardar token JWT en cookie (simulado aquí, normalmente en httpOnly cookie)
-      document.cookie = `auth_token=${data.access_token}; path=/; max-age=3600`
-
-      // Guardar bootstrap token en localStorage si viene en la respuesta (usuarios root)
-      if (data.bootstrap_token) {
-        localStorage.setItem('bootstrap_token', data.bootstrap_token)
-      }
-
-      console.log('Login exitoso:', data)
-
-      // validar el rol del usuario para poder redireccionar a la página correcta
-      if (data.usuario.rol === 'administrador') {
-        router.push('/admin')
-      } else if (data.usuario.rol === 'root') {
-        router.push('/root')
-      } else {
-        router.push('/')
-      }
+      await login({ correo: email, contrasena: password })
+      router.push('/')
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Error al iniciar sesión'
-      setError(message)
+      console.error('Login error', err)
+      setError('Credenciales incorrectas o el servidor no está disponible.')
     } finally {
       setLoading(false)
     }
@@ -176,13 +135,12 @@ export default function LoginPage() {
 
   return (
     <div style={{ ...S.root, fontFamily: "'DM Sans', 'Segoe UI', sans-serif" }}>
-      {/* ── Panel izquierdo ── */}
+      {/* Panel izquierdo */}
       <div style={S.leftPanel} className="login-left-panel">
         <div style={S.circleTopRight} />
         <div style={S.circleBottomLeft} />
         <div style={S.circleBottomRight} />
 
-        {/* Logo */}
         <div style={{ ...logoRow, position: 'relative', zIndex: 1 }}>
           <div style={logoBox}>
             <BookIcon />
@@ -190,7 +148,6 @@ export default function LoginPage() {
           <span style={logoText}>NovaLibros</span>
         </div>
 
-        {/* Hero text */}
         <div style={S.leftContent}>
           <p style={S.leftEyebrow}>Tu librería en línea</p>
           <h2 style={S.leftHeading}>
@@ -203,7 +160,6 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Stats */}
         <div style={S.statsRow}>
           {STATS.map(stat => (
             <div key={stat.label}>
@@ -214,7 +170,7 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* ── Panel derecho ── */}
+      {/* Panel derecho */}
       <div style={S.rightPanel}>
         <div style={S.formWrapper}>
           <h1 style={S.heading}>Bienvenido de vuelta</h1>
@@ -228,7 +184,6 @@ export default function LoginPage() {
           )}
 
           <form onSubmit={handleSubmit}>
-            {/* Email */}
             <div style={field}>
               <label style={label}>Correo electrónico</label>
               <input
@@ -242,7 +197,6 @@ export default function LoginPage() {
               />
             </div>
 
-            {/* Contraseña */}
             <div style={field}>
               <label style={label}>Contraseña</label>
               <div style={{ position: 'relative' }}>
@@ -265,14 +219,12 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Olvidé contraseña */}
             <div style={S.forgotRow}>
               <a href="/forgot-password" style={S.forgotLink}>
                 ¿Olvidaste tu contraseña?
               </a>
             </div>
 
-            {/* Submit */}
             <button
               type="submit"
               disabled={loading}
@@ -288,14 +240,12 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Divider */}
           <div style={dividerRow}>
             <div style={dividerLine} />
             <span style={dividerText}>o</span>
             <div style={dividerLine} />
           </div>
 
-          {/* Registro */}
           <p style={S.bottomText}>
             ¿No tienes cuenta?{' '}
             <a href="/register" style={S.bottomLink}>
