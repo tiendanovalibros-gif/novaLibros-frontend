@@ -194,11 +194,44 @@ export default function RegisterPage() {
   // ── Validaciones por step ──
   const validateStep1 = (): boolean => {
     const e: FormErrors = {}
-    if (!form.nombre.trim()) e.nombre = 'Campo requerido'
-    if (!form.apellido.trim()) e.apellido = 'Campo requerido'
-    if (!form.dni.trim()) e.dni = 'Campo requerido'
-    if (!form.fechaNacimiento) e.fechaNacimiento = 'Campo requerido'
-    if (!form.lugarNacimiento.trim()) e.lugarNacimiento = 'Campo requerido'
+    const nombre = form.nombre.trim()
+    if (!nombre) e.nombre = 'Campo requerido'
+    else if (nombre.length > 40) e.nombre = 'Máximo 40 caracteres'
+    else if (/\d/.test(nombre)) e.nombre = 'El nombre no puede contener números'
+
+    const apellido = form.apellido.trim()
+    if (!apellido) e.apellido = 'Campo requerido'
+    else if (apellido.length > 40) e.apellido = 'Máximo 40 caracteres'
+    else if (/\d/.test(apellido)) e.apellido = 'El apellido no puede contener números'
+
+    const dni = form.dni.trim()
+    if (!dni) e.dni = 'Campo requerido'
+    else if (!/^\d{1,15}$/.test(dni)) e.dni = 'El DNI debe tener solo números (máximo 15 dígitos)'
+    else if (BigInt(dni) <= 0n) e.dni = 'El DNI debe ser un número positivo'
+
+    if (!form.fechaNacimiento) {
+      e.fechaNacimiento = 'Campo requerido'
+    } else {
+      const nacimiento = new Date(`${form.fechaNacimiento}T00:00:00`)
+      const hoy = new Date()
+      hoy.setHours(0, 0, 0, 0)
+
+      if (Number.isNaN(nacimiento.getTime())) {
+        e.fechaNacimiento = 'Fecha inválida'
+      } else if (nacimiento >= hoy) {
+        e.fechaNacimiento = 'La fecha debe ser menor a la actual'
+      } else {
+        const fechaMinima = new Date(hoy.getFullYear() - 10, hoy.getMonth(), hoy.getDate())
+        if (nacimiento > fechaMinima) e.fechaNacimiento = 'Debes tener al menos 10 años'
+      }
+    }
+
+    const lugarNacimiento = form.lugarNacimiento.trim()
+    if (!lugarNacimiento) e.lugarNacimiento = 'Campo requerido'
+    else if (lugarNacimiento.length > 50) e.lugarNacimiento = 'Máximo 50 caracteres'
+    else if (/\d/.test(lugarNacimiento))
+      e.lugarNacimiento = 'El lugar de nacimiento no puede contener números'
+
     if (!form.genero) e.genero = 'Selecciona un género'
     setErrors(e)
     return Object.keys(e).length === 0
@@ -212,6 +245,9 @@ export default function RegisterPage() {
     if (form.contrasena !== form.confirmarContrasena)
       e.confirmarContrasena = 'Las contraseñas no coinciden'
     if (!form.direccion.trim()) e.direccion = 'Campo requerido'
+    if (form.direccion.length > 100) e.direccion = 'Máximo 100 caracteres'
+    if (!/^\+\d{12}$/.test(form.telefono))
+      e.telefono = 'El teléfono debe tener el formato +570000000000'
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -596,18 +632,17 @@ export default function RegisterPage() {
                 </div>
 
                 <div style={field}>
-                  <label style={label}>
-                    Teléfono <span style={{ color: '#94A3B8', fontWeight: 400 }}>(opcional)</span>
-                  </label>
+                  <label style={label}>Teléfono</label>
                   <input
                     type="tel"
                     value={form.telefono}
                     onChange={e => set('telefono', e.target.value)}
-                    placeholder="+57 300 000 0000"
-                    style={getInputStyle(false)}
-                    onFocus={e => inputFocusOn(e, false)}
-                    onBlur={e => inputFocusOff(e, false)}
+                    placeholder="+570000000000"
+                    style={getInputStyle(!!errors.telefono)}
+                    onFocus={e => inputFocusOn(e, !!errors.telefono)}
+                    onBlur={e => inputFocusOff(e, !!errors.telefono)}
                   />
+                  {err('telefono')}
                 </div>
               </>
             )}

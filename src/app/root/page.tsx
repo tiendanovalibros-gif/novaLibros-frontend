@@ -1,6 +1,9 @@
 'use client'
 
 import { useState } from 'react'
+import { useAuth } from '@/context/auth.context'
+import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL
 
@@ -149,6 +152,8 @@ const Modal = ({
 )
 
 export default function AdminLibrosPage() {
+  const { user, isAuthenticated, loading } = useAuth()
+  const router = useRouter()
   const [dialogOpen, setDialogOpen] = useState(false)
   const [formError, setFormError] = useState('')
   const [saving, setSaving] = useState(false)
@@ -163,6 +168,22 @@ export default function AdminLibrosPage() {
     telefono: '',
     estadoCuenta: true,
   })
+  // 🔐 PROTECCIÓN ROOT
+  useEffect(() => {
+    if (loading) return
+
+    // Si no está autenticado → login
+    if (!isAuthenticated) {
+      router.push('/login')
+      return
+    }
+
+    // Si está autenticado pero no es root → home
+    if (user?.rol !== 'root') {
+      router.push('/')
+      return
+    }
+  }, [loading, isAuthenticated, user?.rol, router])
 
   const closeDialog = () => {
     setDialogOpen(false)
@@ -220,21 +241,35 @@ export default function AdminLibrosPage() {
     return true
   }
 
-  const handleCrearAdmin = async () => {
-    if (!validar()) return
-    setSaving(true)
-    try {
-      await apiFetch('/users/register-admin', {
-        method: 'POST',
-        body: JSON.stringify(adminForm),
-      })
-      closeDialog()
-    } catch (e: unknown) {
-      setFormError((e as { message?: string })?.message ?? 'Error al crear el administrador')
-    } finally {
-      setSaving(false)
-    }
+  const { token } = useAuth()
+
+const handleCrearAdmin = async () => {
+  if (!validar()) return
+  if (!token) {
+    setFormError('No hay token de sesión. Inicia sesión nuevamente.')
+    return
   }
+
+  setSaving(true)
+  setFormError('')
+
+  try {
+    await apiFetch('/users/register-admin', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(adminForm),
+    })
+
+    closeDialog()
+  } catch (e: any) {
+    setFormError(e.message ?? 'Error al crear el administrador')
+  } finally {
+    setSaving(false)
+  }
+}
 
   return (
     <div className="min-h-screen bg-slate-50">
