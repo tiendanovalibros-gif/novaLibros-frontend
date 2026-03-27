@@ -9,7 +9,7 @@ interface Libro {
   id: string
   titulo: string
   idAutor: number
-  idGenero: number
+  idGeneros: number[]
   idEditorial: number
   anoPublicacion: number
   precio: number
@@ -33,12 +33,26 @@ interface Editorial {
 }
 type DialogMode = 'create' | 'edit' | 'view' | 'delete' | null
 
+interface FormData {
+  titulo: string
+  idAutor: number
+  idGeneros: number[]
+  idEditorial: number
+  anoPublicacion: number
+  precio: number
+  isbn: string
+  idioma: string
+  descripcion: string
+  imagenPortada: string
+  estado: string
+}
+
 const ESTADO_OPTIONS = ['nuevo', 'usado']
 const IDIOMA_OPTIONS = ['Español', 'Inglés', 'Francés', 'Portugués', 'Alemán', 'Italiano']
 const LIBRO_VACIO = {
   titulo: '',
   idAutor: 0,
-  idGenero: 0,
+  idGeneros: [],
   idEditorial: 0,
   anoPublicacion: new Date().getFullYear(),
   precio: 0,
@@ -295,7 +309,7 @@ export default function AdminLibrosPage() {
   const [filtroEstado, setFiltroEstado] = useState('todos')
   const [dialogMode, setDialogMode] = useState<DialogMode>(null)
   const [libroActual, setLibroActual] = useState<Libro | null>(null)
-  const [form, setForm] = useState(LIBRO_VACIO)
+  const [form, setForm] = useState<FormData>(LIBRO_VACIO)
   const [formError, setFormError] = useState('')
   const [saving, setSaving] = useState(false)
   const [showAgotados, setShowAgotados] = useState(false)
@@ -310,7 +324,14 @@ export default function AdminLibrosPage() {
         apiFetch<Genero[]>('/generos'),
         apiFetch<Editorial[]>('/editoriales'),
       ])
-      setLibros(l)
+
+      // Transformar libros para asegurar que idGeneros sea siempre un array
+      const librosTransformados = l.map(libro => ({
+        ...libro,
+        idGeneros: Array.isArray(libro.idGeneros) ? libro.idGeneros : []
+      }))
+
+      setLibros(librosTransformados)
       setAutores(a)
       setGeneros(g)
       setEditoriales(e)
@@ -339,6 +360,10 @@ export default function AdminLibrosPage() {
 
   const nombreAutor = (id: number) => autores.find(a => a.id === id)?.nombre ?? `Autor #${id}`
   const nombreGenero = (id: number) => generos.find(g => g.id === id)?.nombre ?? `Género #${id}`
+  const nombresGeneros = (ids: number[] | undefined) => {
+    if (!ids || !Array.isArray(ids) || ids.length === 0) return 'Sin géneros'
+    return ids.map(id => nombreGenero(id)).join(', ')
+  }
 
   const librosFiltrados = useMemo(
     () =>
@@ -406,7 +431,9 @@ export default function AdminLibrosPage() {
     setForm({
       titulo: libro.titulo,
       idAutor: libro.idAutor,
-      idGenero: libro.idGenero,
+      idGeneros: Array.isArray(libro.idGeneros)
+        ? libro.idGeneros
+        : [libro.idGeneros || 0].filter(id => id > 0),
       idEditorial: libro.idEditorial,
       anoPublicacion: libro.anoPublicacion,
       precio: libro.precio,
@@ -424,7 +451,9 @@ export default function AdminLibrosPage() {
     setForm({
       titulo: libro.titulo,
       idAutor: libro.idAutor,
-      idGenero: libro.idGenero,
+      idGeneros: Array.isArray(libro.idGeneros)
+        ? libro.idGeneros
+        : [libro.idGeneros || 0].filter(id => id > 0),
       idEditorial: libro.idEditorial,
       anoPublicacion: libro.anoPublicacion,
       precio: libro.precio,
@@ -446,16 +475,20 @@ export default function AdminLibrosPage() {
       setFormError('El título es requerido')
       return false
     }
-    if (!form.idAutor) {
-      setFormError('Selecciona un autor')
+    if (!form.idAutor || Number(form.idAutor) <= 0) {
+      setFormError('Selecciona un autor válido')
       return false
     }
-    if (!form.idGenero) {
-      setFormError('Selecciona un género')
+    if (!Array.isArray(form.idGeneros) || form.idGeneros.length === 0) {
+      setFormError('Selecciona al menos un género')
       return false
     }
-    if (!form.idEditorial) {
-      setFormError('Selecciona una editorial')
+    if (form.idGeneros.some(id => Number(id) <= 0)) {
+      setFormError('Géneros seleccionados inválidos')
+      return false
+    }
+    if (!form.idEditorial || Number(form.idEditorial) <= 0) {
+      setFormError('Selecciona una editorial válida')
       return false
     }
     if (!form.isbn.trim()) {
@@ -466,17 +499,46 @@ export default function AdminLibrosPage() {
       setFormError('El precio debe ser mayor a 0')
       return false
     }
+
+    // Verificar que los IDs existan en las listas cargadas
+    const autorExists = autores.some(a => a.id === Number(form.idAutor))
+    const generosExist = form.idGeneros.every(id => generos.some(g => g.id === Number(id)))
+    const editorialExists = editoriales.some(e => e.id === Number(form.idEditorial))
+
+    if (!autorExists) {
+      setFormError('El autor seleccionado no existe')
+      return false
+    }
+    if (!generosExist) {
+      setFormError('Uno o más géneros seleccionados no existen')
+      return false
+    }
+    if (!editorialExists) {
+      setFormError('La editorial seleccionada no existe')
+      return false
+    }
+
     return true
   }
 
-  const payload = () => ({
-    ...form,
-    idAutor: Number(form.idAutor),
-    idGenero: Number(form.idGenero),
-    idEditorial: Number(form.idEditorial),
-    anoPublicacion: Number(form.anoPublicacion),
-    precio: Number(form.precio),
-  })
+  const payload = () => {
+    const data = {
+      ...form,
+      idAutor: Number(form.idAutor),
+      idGeneros: Array.isArray(form.idGeneros) ? form.idGeneros.map(Number) : [],
+      idEditorial: Number(form.idEditorial),
+      anoPublicacion: Number(form.anoPublicacion),
+      precio: Number(form.precio),
+    }
+
+    // Validar que los IDs sean válidos
+    if (data.idAutor <= 0) throw new Error('ID de autor inválido')
+    if (!data.idGeneros.length || data.idGeneros.some(id => id <= 0))
+      throw new Error('IDs de género inválidos')
+    if (data.idEditorial <= 0) throw new Error('ID de editorial inválido')
+
+    return data
+  }
 
   const handleCrear = async () => {
     if (!validar()) return
@@ -486,7 +548,14 @@ export default function AdminLibrosPage() {
         method: 'POST',
         body: JSON.stringify(payload()),
       })
-      setLibros(prev => [nuevo, ...prev])
+
+      // Transformar la respuesta para asegurar que idGeneros sea un array
+      const libroCreado = {
+        ...nuevo,
+        idGeneros: Array.isArray(nuevo.idGeneros) ? nuevo.idGeneros : []
+      }
+
+      setLibros(prev => [libroCreado, ...prev])
       cerrar()
     } catch (e: unknown) {
       setFormError((e as { message?: string })?.message ?? 'Error al crear')
@@ -499,13 +568,24 @@ export default function AdminLibrosPage() {
     if (!libroActual || !validar()) return
     setSaving(true)
     try {
+      console.log('Editando libro:', libroActual.id)
+      console.log('Payload a enviar:', payload())
+
       const u = await apiFetch<Libro>(`/libros/${libroActual.id}`, {
         method: 'PATCH',
         body: JSON.stringify(payload()),
       })
-      setLibros(prev => prev.map(l => (l.id === libroActual.id ? u : l)))
+
+      // Transformar la respuesta para asegurar que idGeneros sea un array
+      const libroActualizado = {
+        ...u,
+        idGeneros: Array.isArray(u.idGeneros) ? u.idGeneros : []
+      }
+
+      setLibros(prev => prev.map(l => (l.id === libroActual.id ? libroActualizado : l)))
       cerrar()
     } catch (e: unknown) {
+      console.error('Error al editar libro:', e)
       setFormError((e as { message?: string })?.message ?? 'Error al actualizar')
     } finally {
       setSaving(false)
@@ -526,7 +606,8 @@ export default function AdminLibrosPage() {
     }
   }
 
-  const setF = (key: string, value: string | number) => setForm(prev => ({ ...prev, [key]: value }))
+  const setF = (key: string, value: string | number | number[]) =>
+    setForm(prev => ({ ...prev, [key]: value }))
 
   const FormLibro = ({ readOnly = false }: { readOnly?: boolean }) => (
     <div className="flex flex-col gap-4">
@@ -558,20 +639,31 @@ export default function AdminLibrosPage() {
             </option>
           ))}
         </Select>
-        <Select
-          key="genero"
-          label="Género *"
-          value={form.idGenero}
-          onChange={e => setF('idGenero', e.target.value)}
-          disabled={readOnly}
-        >
-          <option value={0}>Seleccionar género...</option>
-          {generos.map(g => (
-            <option key={g.id} value={g.id}>
-              {g.nombre}
-            </option>
-          ))}
-        </Select>
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">Géneros *</label>
+          <select
+            multiple
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+            value={form.idGeneros.map(String)}
+            onChange={e => {
+              const selectedOptions = Array.from(e.target.selectedOptions, option =>
+                Number(option.value)
+              )
+              setF('idGeneros', selectedOptions)
+            }}
+            disabled={readOnly}
+            size={4}
+          >
+            {generos.map(g => (
+              <option key={g.id} value={g.id}>
+                {g.nombre}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-gray-500">
+            Mantén Ctrl (Cmd en Mac) para seleccionar múltiples géneros
+          </p>
+        </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Select
@@ -806,7 +898,7 @@ export default function AdminLibrosPage() {
                         {nombreAutor(libro.idAutor)}
                       </td>
                       <td className="px-4 py-3 text-slate-600 text-sm whitespace-nowrap">
-                        {nombreGenero(libro.idGenero)}
+                        {nombresGeneros(libro.idGeneros)}
                       </td>
                       <td className="px-4 py-3 text-slate-500 text-xs font-mono">{libro.isbn}</td>
                       <td className="px-4 py-3 text-blue-600 font-bold text-sm whitespace-nowrap">
