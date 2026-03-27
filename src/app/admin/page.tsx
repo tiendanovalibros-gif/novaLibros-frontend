@@ -348,7 +348,9 @@ export default function AdminLibrosPage() {
           (!q ||
             l.titulo.toLowerCase().includes(q) ||
             l.isbn.toLowerCase().includes(q) ||
-            nombreAutor(l.idAutor).toLowerCase().includes(q)) &&
+            (autores.find(a => a.id === l.idAutor)?.nombre ?? `autor #${l.idAutor}`)
+              .toLowerCase()
+              .includes(q)) &&
           (filtroEstado === 'todos' || l.estado === filtroEstado)
         )
       }),
@@ -547,7 +549,7 @@ export default function AdminLibrosPage() {
 
   const setF = (key: string, value: string | number) => setForm(prev => ({ ...prev, [key]: value }))
 
-  const FormLibro = ({ readOnly = false }: { readOnly?: boolean }) => (
+  const renderFormLibro = (readOnly = false) => (
     <div className="flex flex-col gap-4">
       {formError && (
         <div className="bg-red-50 border border-red-300 rounded-lg px-4 py-3 text-red-800 text-sm">
@@ -871,7 +873,7 @@ export default function AdminLibrosPage() {
 
       {dialogMode === 'create' && (
         <Modal title="Agregar nuevo libro" onClose={cerrar}>
-          <FormLibro />
+          {renderFormLibro()}
           <div className="flex gap-3 justify-end mt-6 pt-4 border-t border-slate-100">
             <button
               onClick={cerrar}
@@ -891,7 +893,7 @@ export default function AdminLibrosPage() {
       )}
       {dialogMode === 'edit' && (
         <Modal title={`Editar: ${libroActual?.titulo}`} onClose={cerrar}>
-          <FormLibro />
+          {renderFormLibro()}
           <div className="flex gap-3 justify-end mt-6 pt-4 border-t border-slate-100">
             <button
               onClick={cerrar}
@@ -911,7 +913,7 @@ export default function AdminLibrosPage() {
       )}
       {dialogMode === 'view' && (
         <Modal title="Detalles del libro" onClose={cerrar}>
-          <FormLibro readOnly />
+          {renderFormLibro(true)}
           <div className="flex justify-end mt-6 pt-4 border-t border-slate-100">
             <button
               onClick={cerrar}

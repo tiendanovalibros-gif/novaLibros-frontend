@@ -243,42 +243,47 @@ export default function AdminLibrosPage() {
 
   const { token } = useAuth()
 
-const handleCrearAdmin = async () => {
-  if (!validar()) return
-  if (!token) {
-    setFormError('No hay token de sesión. Inicia sesión nuevamente.')
-    return
+  const handleCrearAdmin = async () => {
+    if (!validar()) return
+    if (!token) {
+      setFormError('No hay token de sesión. Inicia sesión nuevamente.')
+      return
+    }
+
+    setSaving(true)
+    setFormError('')
+
+    try {
+      await apiFetch('/users/register-admin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(adminForm),
+      })
+
+      closeDialog()
+    } catch (e: any) {
+      setFormError(e.message ?? 'Error al crear el administrador')
+    } finally {
+      setSaving(false)
+    }
   }
-
-  setSaving(true)
-  setFormError('')
-
-  try {
-    await apiFetch('/users/register-admin', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(adminForm),
-    })
-
-    closeDialog()
-  } catch (e: any) {
-    setFormError(e.message ?? 'Error al crear el administrador')
-  } finally {
-    setSaving(false)
-  }
-}
 
   return (
     <div className="min-h-screen bg-slate-50">
       <nav className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center">
+            <button
+              type="button"
+              onClick={() => router.push('/')}
+              className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors"
+              aria-label="Ir al inicio"
+            >
               <BookIcon />
-            </div>
+            </button>
             <div>
               <span className="text-slate-900 text-base font-bold">NovaLibros</span>
               <span className="ml-2 text-xs text-slate-400 font-medium uppercase tracking-wider">
