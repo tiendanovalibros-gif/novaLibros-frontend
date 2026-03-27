@@ -3,24 +3,10 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import * as S from '@/styles/register.styles'
-import {
-  btnPrimary,
-  btnPrimaryDisabled,
-  btnSecondary,
-  alertError,
-  alertErrorText,
-  label,
-  field,
-  getInputStyle,
-  inputFocusOn,
-  inputFocusOff,
-  fieldErrorText,
-  globalStyles,
-} from '@/styles/auth.styles'
 
 // ─── Iconos ───────────────────────────────────────────────────────────────────
-const BookIcon = ({ size = 20 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+const BookIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
     <path
       d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"
       stroke="white"
@@ -129,6 +115,12 @@ const STEPS = [
   { num: 3, label: 'Preferencias' },
 ]
 
+const STATS = [
+  { num: '+5.000', label: 'Títulos' },
+  { num: '+800', label: 'Autores' },
+  { num: '24h', label: 'Reservas' },
+]
+
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 type Step = 1 | 2 | 3
 
@@ -178,6 +170,7 @@ export default function RegisterPage() {
   const [errors, setErrors] = useState<FormErrors>({})
   const [form, setForm] = useState<FormData>(INITIAL_FORM)
   const router = useRouter()
+  const [error, setError] = useState('')
 
   const set = (field: keyof FormData, value: string | boolean | string[]) => {
     setForm(prev => ({ ...prev, [field]: value }))
@@ -280,7 +273,8 @@ export default function RegisterPage() {
     }
   }
 
-  const err = (f: keyof FormData) => (errors[f] ? <p style={fieldErrorText}>{errors[f]}</p> : null)
+  const err = (f: keyof FormData) =>
+    errors[f] ? <p className="mt-1 text-xs text-[#DC2626]">{errors[f]}</p> : null
 
   // ── Sub-componente: Checkbox ──
   const Checkbox = ({
@@ -291,16 +285,18 @@ export default function RegisterPage() {
     label: string
   }) => {
     const checked = form[f] as boolean
-    const boxStyle = errors[f] ? S.checkboxError : checked ? S.checkboxActive : S.checkboxInactive
+    const boxClasses = errors[f]
+      ? 'w-[18px] h-[18px] min-w-[18px] rounded border-2 border-[#DC2626] bg-white flex items-center justify-center mt-0.5 cursor-pointer transition-all'
+      : checked
+        ? 'w-[18px] h-[18px] min-w-[18px] rounded border-2 border-[#2563EB] bg-[#2563EB] flex items-center justify-center mt-0.5 cursor-pointer transition-all'
+        : 'w-[18px] h-[18px] min-w-[18px] rounded border-2 border-[#94A3B8] bg-white flex items-center justify-center mt-0.5 cursor-pointer transition-all'
     return (
       <div>
-        <label
-          style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', cursor: 'pointer' }}
-        >
-          <div onClick={() => set(f, !checked)} style={boxStyle}>
+        <label className="flex cursor-pointer items-start gap-3">
+          <div onClick={() => set(f, !checked)} className={boxClasses}>
             {checked && <CheckIcon />}
           </div>
-          <span style={S.checkboxLabel}>{lbl}</span>
+          <span className="text-sm leading-relaxed text-[#475569]">{lbl}</span>
         </label>
         {errors[f] && <p style={{ ...fieldErrorText, marginLeft: '30px' }}>{errors[f]}</p>}
       </div>
@@ -308,30 +304,43 @@ export default function RegisterPage() {
   }
 
   return (
-    <div style={{ ...S.root, fontFamily: "'DM Sans', 'Segoe UI', sans-serif" }}>
-      {/* ── Header ── */}
-      <header style={S.header}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={S.headerLogoBox}>
-            <BookIcon />
-          </div>
-          <span style={S.headerLogoText}>NovaLibros</span>
-        </div>
-        <p style={S.headerLink}>
-          ¿Ya tienes cuenta?{' '}
-          <a href="/login" style={S.headerLoginLink}>
-            Inicia sesión
-          </a>
-        </p>
-      </header>
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+        @media (max-width: 640px) {
+          input, select {
+            font-size: 16px !important;
+          }
+        }
+      `}</style>
+      <div className="flex min-h-screen bg-[#F8FAFC] font-['DM_Sans','Segoe_UI',sans-serif]">
+        {/* ── Panel izquierdo ── */}
+        <div className="relative hidden basis-[45%] flex-shrink-0 flex-col justify-between overflow-hidden bg-[#334155] p-12 text-white md:flex">
+          <div className="pointer-events-none absolute -top-20 -right-20 h-80 w-80 rounded-full bg-[#2563EB] opacity-10" />
+          <div className="pointer-events-none absolute -bottom-10 left-[-60px] h-60 w-60 rounded-full bg-[#2563EB] opacity-10" />
+          <div className="pointer-events-none absolute -bottom-16 right-[20%] h-40 w-40 rounded-full bg-[#DBEAFE] opacity-20" />
 
-      {/* ── Main ── */}
-      <main style={S.main}>
-        <div style={S.mainInner}>
-          {/* Título */}
-          <div style={S.titleWrapper}>
-            <h1 style={S.pageTitle}>Crea tu cuenta</h1>
-            <p style={S.pageSubtitle}>Completa el formulario para acceder a todos los beneficios</p>
+          {/* Logo */}
+          <a href="/" className="relative z-[1] flex items-center gap-3 text-white no-underline">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#2563EB]">
+              <BookIcon />
+            </div>
+            <span className="text-2xl font-bold">NovaLibros</span>
+          </a>
+
+          {/* Hero text */}
+          <div className="relative z-[1] space-y-5">
+            <p className="text-[13px] font-medium uppercase tracking-[0.2em] text-[#94A3B8]">
+              Tu librería en línea
+            </p>
+            <h2 className="text-[36px] font-bold leading-tight text-white">
+              Encuentra el libro
+              <br />
+              <span className="text-[#DBEAFE]">perfecto para ti</span>
+            </h2>
+            <p className="max-w-[340px] text-[15px] leading-relaxed text-[#CBD5F5]">
+              Navega entre miles de títulos y organiza tus compras y reservas sin complicaciones
+            </p>
           </div>
 
           {/* Stepper */}
@@ -382,337 +391,435 @@ export default function RegisterPage() {
                 <ErrorIcon />
                 <span style={alertErrorText}>{errors.general}</span>
               </div>
-            )}
+            ))}
+          </div>
+        </div>
 
-            {/* ── STEP 1: Datos personales ── */}
-            {step === 1 && (
-              <>
-                <h2 style={S.cardTitle}>Información personal</h2>
-                <div style={S.gridTwoCols}>
-                  <div style={field}>
-                    <label style={label}>Nombre(s)</label>
-                    <input
-                      type="text"
-                      value={form.nombre}
-                      onChange={e => set('nombre', e.target.value)}
-                      placeholder="Juan"
-                      style={getInputStyle(!!errors.nombre)}
-                      onFocus={e => inputFocusOn(e, !!errors.nombre)}
-                      onBlur={e => inputFocusOff(e, !!errors.nombre)}
-                    />
-                    {err('nombre')}
+        {/* ── Panel derecho ── */}
+        <div className="flex flex-1 items-start justify-center overflow-y-auto px-8 py-12">
+          <div className="w-full max-w-[520px]">
+            {/* Header mobile */}
+            <div className="mb-8 text-center md:hidden">
+              <a href="/" className="inline-flex items-center gap-3 text-[#0F172A] no-underline">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#2563EB]">
+                  <BookIcon />
+                </div>
+                <span className="text-2xl font-bold">NovaLibros</span>
+              </a>
+            </div>
+
+            {/* Título */}
+            <div className="mb-6 text-center">
+              <h1 className="text-3xl font-bold text-[#0F172A]">Crea tu cuenta</h1>
+              <p className="mt-2 text-[15px] text-[#475569]">
+                Completa el formulario para acceder a todos los beneficios
+              </p>
+            </div>
+
+            {/* Stepper */}
+            <div className="mb-8 flex items-center justify-center">
+              {STEPS.map((s, i) => {
+                const done = step > s.num
+                const active = step === s.num
+                return (
+                  <div key={s.num} className="flex items-center">
+                    <div className="flex flex-col items-center gap-1.5">
+                      <div
+                        className={`flex h-9 w-9 items-center justify-center rounded-full transition-all ${
+                          active || done ? 'bg-[#2563EB]' : 'bg-[#E2E8F0]'
+                        }`}
+                      >
+                        {done ? (
+                          <CheckIcon />
+                        ) : (
+                          <span
+                            className={`text-sm font-bold ${active ? 'text-white' : 'text-[#94A3B8]'}`}
+                          >
+                            {s.num}
+                          </span>
+                        )}
+                      </div>
+                      <span
+                        className={`text-xs ${
+                          active ? 'font-semibold text-[#0F172A]' : 'text-[#94A3B8]'
+                        }`}
+                      >
+                        {s.label}
+                      </span>
+                    </div>
+                    {i < STEPS.length - 1 && (
+                      <div
+                        className={`mx-2 mb-5 h-0.5 w-20 transition-colors ${
+                          done ? 'bg-[#2563EB]' : 'bg-[#E2E8F0]'
+                        }`}
+                      />
+                    )}
                   </div>
-                  <div style={field}>
-                    <label style={label}>Apellido(s)</label>
-                    <input
-                      type="text"
-                      value={form.apellido}
-                      onChange={e => set('apellido', e.target.value)}
-                      placeholder="García"
-                      style={getInputStyle(!!errors.apellido)}
-                      onFocus={e => inputFocusOn(e, !!errors.apellido)}
-                      onBlur={e => inputFocusOff(e, !!errors.apellido)}
-                    />
-                    {err('apellido')}
+                )
+              })}
+            </div>
+
+            {/* Card */}
+            <div className="rounded-[28px] bg-white px-9 py-10 shadow-[0_18px_45px_rgba(15,23,42,0.12)]">
+              {/* Error general */}
+              {errors.general && (
+                <div className="mb-5 flex items-center gap-2 rounded-lg border border-[#EF4444] bg-[#FEE2E2] px-4 py-3 text-sm text-[#991B1B]">
+                  <ErrorIcon />
+                  <span>{errors.general}</span>
+                </div>
+              )}
+
+              {error && (
+                <div className="mb-5 flex items-center gap-2 rounded-lg border border-[#EF4444] bg-[#FEE2E2] px-4 py-3 text-sm text-[#991B1B]">
+                  <ErrorIcon />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              {/* ── STEP 1: Datos personales ── */}
+              {step === 1 && (
+                <>
+                  <h2 className="mb-6 text-lg font-bold text-[#0F172A]">Información personal</h2>
+                  <div className="space-y-5">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="mb-2 block text-sm font-semibold text-[#0F172A]">
+                          Nombre(s)
+                        </label>
+                        <input
+                          type="text"
+                          value={form.nombre}
+                          onChange={e => set('nombre', e.target.value)}
+                          placeholder="Juan"
+                          className={`w-full rounded-lg border ${
+                            errors.nombre ? 'border-[#DC2626]' : 'border-[#CBD5E1]'
+                          } bg-white px-3.5 py-3 text-[15px] text-[#0F172A] outline-none transition focus:border-[#2563EB]`}
+                        />
+                        {err('nombre')}
+                      </div>
+                      <div>
+                        <label className="mb-2 block text-sm font-semibold text-[#0F172A]">
+                          Apellido(s)
+                        </label>
+                        <input
+                          type="text"
+                          value={form.apellido}
+                          onChange={e => set('apellido', e.target.value)}
+                          placeholder="García"
+                          className={`w-full rounded-lg border ${
+                            errors.apellido ? 'border-[#DC2626]' : 'border-[#CBD5E1]'
+                          } bg-white px-3.5 py-3 text-[15px] text-[#0F172A] outline-none transition focus:border-[#2563EB]`}
+                        />
+                        {err('apellido')}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-[#0F172A]">
+                        DNI / Documento de identidad
+                      </label>
+                      <input
+                        type="text"
+                        value={form.dni}
+                        onChange={e => set('dni', e.target.value)}
+                        placeholder="1234567890"
+                        className={`w-full rounded-lg border ${
+                          errors.dni ? 'border-[#DC2626]' : 'border-[#CBD5E1]'
+                        } bg-white px-3.5 py-3 text-[15px] text-[#0F172A] outline-none transition focus:border-[#2563EB]`}
+                      />
+                      {err('dni')}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="mb-2 block text-sm font-semibold text-[#0F172A]">
+                          Fecha de nacimiento
+                        </label>
+                        <input
+                          type="date"
+                          value={form.fechaNacimiento}
+                          onChange={e => set('fechaNacimiento', e.target.value)}
+                          className={`w-full rounded-lg border ${
+                            errors.fechaNacimiento ? 'border-[#DC2626]' : 'border-[#CBD5E1]'
+                          } bg-white px-3.5 py-3 text-[15px] text-[#0F172A] outline-none transition focus:border-[#2563EB]`}
+                        />
+                        {err('fechaNacimiento')}
+                      </div>
+                      <div>
+                        <label className="mb-2 block text-sm font-semibold text-[#0F172A]">
+                          Género
+                        </label>
+                        <select
+                          value={form.genero}
+                          onChange={e => set('genero', e.target.value)}
+                          className={`w-full cursor-pointer rounded-lg border ${
+                            errors.genero ? 'border-[#DC2626]' : 'border-[#CBD5E1]'
+                          } bg-white px-3.5 py-3 text-[15px] text-[#0F172A] outline-none transition focus:border-[#2563EB]`}
+                        >
+                          <option value="">Seleccionar...</option>
+                          <option value="masculino">Masculino</option>
+                          <option value="femenino">Femenino</option>
+                          <option value="otro">Otro</option>
+                          <option value="prefiero_no_decir">Prefiero no decir</option>
+                        </select>
+                        {err('genero')}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-[#0F172A]">
+                        Lugar de nacimiento
+                      </label>
+                      <input
+                        type="text"
+                        value={form.lugarNacimiento}
+                        onChange={e => set('lugarNacimiento', e.target.value)}
+                        placeholder="Pereira, Colombia"
+                        className={`w-full rounded-lg border ${
+                          errors.lugarNacimiento ? 'border-[#DC2626]' : 'border-[#CBD5E1]'
+                        } bg-white px-3.5 py-3 text-[15px] text-[#0F172A] outline-none transition focus:border-[#2563EB]`}
+                      />
+                      {err('lugarNacimiento')}
+                    </div>
                   </div>
-                </div>
+                </>
+              )}
 
-                <div style={field}>
-                  <label style={label}>DNI / Documento de identidad</label>
-                  <input
-                    type="text"
-                    value={form.dni}
-                    onChange={e => set('dni', e.target.value)}
-                    placeholder="1234567890"
-                    style={getInputStyle(!!errors.dni)}
-                    onFocus={e => inputFocusOn(e, !!errors.dni)}
-                    onBlur={e => inputFocusOff(e, !!errors.dni)}
-                  />
-                  {err('dni')}
-                </div>
+              {/* ── STEP 2: Cuenta ── */}
+              {step === 2 && (
+                <>
+                  <h2 className="mb-6 text-lg font-bold text-[#0F172A]">
+                    Datos de acceso y contacto
+                  </h2>
+                  <div className="space-y-5">
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-[#0F172A]">
+                        Correo electrónico
+                      </label>
+                      <input
+                        type="email"
+                        value={form.correo}
+                        onChange={e => set('correo', e.target.value)}
+                        placeholder="tucorreo@ejemplo.com"
+                        className={`w-full rounded-lg border ${
+                          errors.correo ? 'border-[#DC2626]' : 'border-[#CBD5E1]'
+                        } bg-white px-3.5 py-3 text-[15px] text-[#0F172A] outline-none transition focus:border-[#2563EB]`}
+                      />
+                      {err('correo')}
+                    </div>
 
-                <div style={S.gridTwoCols}>
-                  <div style={field}>
-                    <label style={label}>Fecha de nacimiento</label>
-                    <input
-                      type="date"
-                      value={form.fechaNacimiento}
-                      onChange={e => set('fechaNacimiento', e.target.value)}
-                      style={getInputStyle(!!errors.fechaNacimiento)}
-                      onFocus={e => inputFocusOn(e, !!errors.fechaNacimiento)}
-                      onBlur={e => inputFocusOff(e, !!errors.fechaNacimiento)}
-                    />
-                    {err('fechaNacimiento')}
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-[#0F172A]">
+                        Nombre de usuario
+                      </label>
+                      <input
+                        type="text"
+                        value={form.usuario}
+                        onChange={e => set('usuario', e.target.value)}
+                        placeholder="juan_garcia"
+                        className={`w-full rounded-lg border ${
+                          errors.usuario ? 'border-[#DC2626]' : 'border-[#CBD5E1]'
+                        } bg-white px-3.5 py-3 text-[15px] text-[#0F172A] outline-none transition focus:border-[#2563EB]`}
+                      />
+                      {err('usuario')}
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-[#0F172A]">
+                        Contraseña
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          value={form.contrasena}
+                          onChange={e => set('contrasena', e.target.value)}
+                          placeholder="Mínimo 8 caracteres"
+                          className={`w-full rounded-lg border ${
+                            errors.contrasena ? 'border-[#DC2626]' : 'border-[#CBD5E1]'
+                          } bg-white px-3.5 py-3 pr-11 text-[15px] text-[#0F172A] outline-none transition focus:border-[#2563EB]`}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 flex -translate-y-1/2 items-center border-none bg-transparent p-1 text-[#94A3B8]"
+                        >
+                          {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                        </button>
+                      </div>
+                      {/* Indicador de fuerza */}
+                      {form.contrasena.length > 0 && (
+                        <div className="mt-2 flex gap-1">
+                          {[1, 2, 3, 4].map(i => (
+                            <div
+                              key={i}
+                              className="h-[3px] flex-1 rounded-sm transition-colors"
+                              style={{
+                                backgroundColor:
+                                  form.contrasena.length >= i * 2
+                                    ? form.contrasena.length < 6
+                                      ? '#EF4444'
+                                      : form.contrasena.length < 10
+                                        ? '#F59E0B'
+                                        : '#10B981'
+                                    : '#E2E8F0',
+                              }}
+                            />
+                          ))}
+                        </div>
+                      )}
+                      {err('contrasena')}
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-[#0F172A]">
+                        Confirmar contraseña
+                      </label>
+                      <input
+                        type="password"
+                        value={form.confirmarContrasena}
+                        onChange={e => set('confirmarContrasena', e.target.value)}
+                        placeholder="Repite tu contraseña"
+                        className={`w-full rounded-lg border ${
+                          errors.confirmarContrasena ? 'border-[#DC2626]' : 'border-[#CBD5E1]'
+                        } bg-white px-3.5 py-3 text-[15px] text-[#0F172A] outline-none transition focus:border-[#2563EB]`}
+                      />
+                      {err('confirmarContrasena')}
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-[#0F172A]">
+                        Dirección de correspondencia
+                      </label>
+                      <input
+                        type="text"
+                        value={form.direccion}
+                        onChange={e => set('direccion', e.target.value)}
+                        placeholder="Calle 15 #23-45, Pereira"
+                        className={`w-full rounded-lg border ${
+                          errors.direccion ? 'border-[#DC2626]' : 'border-[#CBD5E1]'
+                        } bg-white px-3.5 py-3 text-[15px] text-[#0F172A] outline-none transition focus:border-[#2563EB]`}
+                      />
+                      {err('direccion')}
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-[#0F172A]">
+                        Teléfono <span className="font-normal text-[#94A3B8]">(opcional)</span>
+                      </label>
+                      <input
+                        type="tel"
+                        value={form.telefono}
+                        onChange={e => set('telefono', e.target.value)}
+                        placeholder="+57 300 000 0000"
+                        className="w-full rounded-lg border border-[#CBD5E1] bg-white px-3.5 py-3 text-[15px] text-[#0F172A] outline-none transition focus:border-[#2563EB]"
+                      />
+                    </div>
                   </div>
-                  <div style={field}>
-                    <label style={label}>Género</label>
-                    <select
-                      value={form.genero}
-                      onChange={e => set('genero', e.target.value)}
-                      style={{ ...getInputStyle(!!errors.genero), cursor: 'pointer' }}
-                      onFocus={e => inputFocusOn(e, !!errors.genero)}
-                      onBlur={e => inputFocusOff(e, !!errors.genero)}
-                    >
-                      <option value="">Seleccionar...</option>
-                      <option value="masculino">Masculino</option>
-                      <option value="femenino">Femenino</option>
-                      <option value="otro">Otro</option>
-                      <option value="prefiero_no_decir">Prefiero no decir</option>
-                    </select>
-                    {err('genero')}
+                </>
+              )}
+
+              {/* ── STEP 3: Preferencias ── */}
+              {step === 3 && (
+                <form onSubmit={handleSubmit}>
+                  <h2 className="mb-2 text-lg font-bold text-[#0F172A]">Preferencias literarias</h2>
+                  <p className="mb-5 text-sm text-[#475569]">
+                    Selecciona los géneros que más te interesan para personalizar tus
+                    recomendaciones
+                  </p>
+
+                  <div className="mb-6 flex flex-wrap gap-2">
+                    {GENEROS_LITERARIOS.map(pref => {
+                      const selected = form.preferencias.includes(pref)
+                      return (
+                        <button
+                          key={pref}
+                          type="button"
+                          onClick={() => togglePreferencia(pref)}
+                          className={`rounded-full border px-3.5 py-1.5 text-[13px] transition-all ${
+                            selected
+                              ? 'border-[#2563EB] bg-[#DBEAFE] font-semibold text-[#1D4ED8]'
+                              : 'border-[#E2E8F0] bg-white text-[#475569]'
+                          }`}
+                        >
+                          {pref}
+                        </button>
+                      )
+                    })}
                   </div>
-                </div>
 
-                <div style={field}>
-                  <label style={label}>Lugar de nacimiento</label>
-                  <input
-                    type="text"
-                    value={form.lugarNacimiento}
-                    onChange={e => set('lugarNacimiento', e.target.value)}
-                    placeholder="Pereira, Colombia"
-                    style={getInputStyle(!!errors.lugarNacimiento)}
-                    onFocus={e => inputFocusOn(e, !!errors.lugarNacimiento)}
-                    onBlur={e => inputFocusOff(e, !!errors.lugarNacimiento)}
-                  />
-                  {err('lugarNacimiento')}
-                </div>
-              </>
-            )}
-
-            {/* ── STEP 2: Cuenta ── */}
-            {step === 2 && (
-              <>
-                <h2 style={S.cardTitle}>Datos de acceso y contacto</h2>
-
-                <div style={field}>
-                  <label style={label}>Correo electrónico</label>
-                  <input
-                    type="email"
-                    value={form.correo}
-                    onChange={e => set('correo', e.target.value)}
-                    placeholder="tucorreo@ejemplo.com"
-                    style={getInputStyle(!!errors.correo)}
-                    onFocus={e => inputFocusOn(e, !!errors.correo)}
-                    onBlur={e => inputFocusOff(e, !!errors.correo)}
-                  />
-                  {err('correo')}
-                </div>
-
-                <div style={field}>
-                  <label style={label}>Nombre de usuario</label>
-                  <input
-                    type="text"
-                    value={form.usuario}
-                    onChange={e => set('usuario', e.target.value)}
-                    placeholder="juan_garcia"
-                    style={getInputStyle(!!errors.usuario)}
-                    onFocus={e => inputFocusOn(e, !!errors.usuario)}
-                    onBlur={e => inputFocusOff(e, !!errors.usuario)}
-                  />
-                  {err('usuario')}
-                </div>
-
-                <div style={field}>
-                  <label style={label}>Contraseña</label>
-                  <div style={{ position: 'relative' }}>
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      value={form.contrasena}
-                      onChange={e => set('contrasena', e.target.value)}
-                      placeholder="Mínimo 8 caracteres"
-                      style={{ ...getInputStyle(!!errors.contrasena), paddingRight: '44px' }}
-                      onFocus={e => inputFocusOn(e, !!errors.contrasena)}
-                      onBlur={e => inputFocusOff(e, !!errors.contrasena)}
+                  <div className="mb-6 space-y-4 rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] p-4">
+                    <Checkbox
+                      field="aceptaTerminos"
+                      label="Acepto los términos y condiciones del servicio"
                     />
+                    <Checkbox
+                      field="aceptaDatos"
+                      label="Acepto la política de tratamiento de datos personales (Ley 1581 de 2012)"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full rounded-lg bg-[#2563EB] px-4 py-3 text-[15px] font-semibold text-white transition hover:bg-[#1D4ED8] disabled:cursor-not-allowed disabled:bg-[#93C5FD]"
+                  >
+                    {loading ? 'Creando cuenta...' : 'Crear cuenta'}
+                  </button>
+                </form>
+              )}
+
+              {/* ── Navegación entre steps ── */}
+              {step < 3 && (
+                <div
+                  className={`mt-8 flex border-t border-[#E2E8F0] pt-6 ${
+                    step > 1 ? 'justify-between' : 'justify-end'
+                  }`}
+                >
+                  {step > 1 && (
                     <button
                       type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      style={{
-                        position: 'absolute',
-                        right: '12px',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        color: '#94A3B8',
-                        padding: '4px',
-                        display: 'flex',
-                        alignItems: 'center',
-                      }}
+                      onClick={() => setStep((step - 1) as Step)}
+                      className="rounded-lg border border-[#E2E8F0] bg-white px-4 py-3 text-[15px] font-semibold text-[#0F172A] transition hover:bg-[#F8FAFC]"
                     >
-                      {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                      Atrás
                     </button>
-                  </div>
-                  {/* Indicador de fuerza */}
-                  {form.contrasena.length > 0 && (
-                    <div style={S.strengthRow}>
-                      {[1, 2, 3, 4].map(i => (
-                        <div
-                          key={i}
-                          style={{
-                            flex: 1,
-                            height: '3px',
-                            borderRadius: '2px',
-                            transition: 'background-color 0.2s',
-                            backgroundColor:
-                              form.contrasena.length >= i * 2
-                                ? S.getStrengthBarColor(form.contrasena.length)
-                                : '#E2E8F0',
-                          }}
-                        />
-                      ))}
-                    </div>
                   )}
-                  {err('contrasena')}
-                </div>
-
-                <div style={field}>
-                  <label style={label}>Confirmar contraseña</label>
-                  <input
-                    type="password"
-                    value={form.confirmarContrasena}
-                    onChange={e => set('confirmarContrasena', e.target.value)}
-                    placeholder="Repite tu contraseña"
-                    style={getInputStyle(!!errors.confirmarContrasena)}
-                    onFocus={e => inputFocusOn(e, !!errors.confirmarContrasena)}
-                    onBlur={e => inputFocusOff(e, !!errors.confirmarContrasena)}
-                  />
-                  {err('confirmarContrasena')}
-                </div>
-
-                <div style={field}>
-                  <label style={label}>Dirección de correspondencia</label>
-                  <input
-                    type="text"
-                    value={form.direccion}
-                    onChange={e => set('direccion', e.target.value)}
-                    placeholder="Calle 15 #23-45, Pereira"
-                    style={getInputStyle(!!errors.direccion)}
-                    onFocus={e => inputFocusOn(e, !!errors.direccion)}
-                    onBlur={e => inputFocusOff(e, !!errors.direccion)}
-                  />
-                  {err('direccion')}
-                </div>
-
-                <div style={field}>
-                  <label style={label}>
-                    Teléfono <span style={{ color: '#94A3B8', fontWeight: 400 }}>(opcional)</span>
-                  </label>
-                  <input
-                    type="tel"
-                    value={form.telefono}
-                    onChange={e => set('telefono', e.target.value)}
-                    placeholder="+57 300 000 0000"
-                    style={getInputStyle(false)}
-                    onFocus={e => inputFocusOn(e, false)}
-                    onBlur={e => inputFocusOff(e, false)}
-                  />
-                </div>
-              </>
-            )}
-
-            {/* ── STEP 3: Preferencias ── */}
-            {step === 3 && (
-              <form onSubmit={handleSubmit}>
-                <h2 style={S.cardTitle}>Preferencias literarias</h2>
-                <p style={S.cardSubtitle}>
-                  Selecciona los géneros que más te interesan para personalizar tus recomendaciones
-                </p>
-
-                <div style={S.chipsWrapper}>
-                  {GENEROS_LITERARIOS.map(pref => {
-                    const selected = form.preferencias.includes(pref)
-                    return (
-                      <button
-                        key={pref}
-                        type="button"
-                        onClick={() => togglePreferencia(pref)}
-                        style={selected ? S.chipSelected : S.chipDefault}
-                      >
-                        {pref}
-                      </button>
-                    )
-                  })}
-                </div>
-
-                <div style={S.legalBox}>
-                  <Checkbox
-                    field="aceptaTerminos"
-                    label="Acepto los términos y condiciones del servicio"
-                  />
-                  <Checkbox
-                    field="aceptaDatos"
-                    label="Acepto la política de tratamiento de datos personales (Ley 1581 de 2012)"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  style={loading ? btnPrimaryDisabled : btnPrimary}
-                  onMouseEnter={e => {
-                    if (!loading) (e.target as HTMLButtonElement).style.backgroundColor = '#1D4ED8'
-                  }}
-                  onMouseLeave={e => {
-                    if (!loading) (e.target as HTMLButtonElement).style.backgroundColor = '#2563EB'
-                  }}
-                >
-                  {loading ? 'Creando cuenta...' : 'Crear cuenta'}
-                </button>
-              </form>
-            )}
-
-            {/* ── Navegación entre steps ── */}
-            {step < 3 && (
-              <div style={S.navRow(step > 1)}>
-                {step > 1 && (
                   <button
                     type="button"
-                    onClick={() => setStep((step - 1) as Step)}
-                    style={btnSecondary}
-                    onMouseEnter={e =>
-                      ((e.target as HTMLButtonElement).style.backgroundColor = '#CBD5E1')
-                    }
-                    onMouseLeave={e =>
-                      ((e.target as HTMLButtonElement).style.backgroundColor = '#E2E8F0')
-                    }
+                    onClick={nextStep}
+                    className="rounded-lg bg-[#2563EB] px-6 py-3 text-[15px] font-semibold text-white transition hover:bg-[#1D4ED8]"
                   >
-                    Atrás
+                    Continuar
                   </button>
-                )}
-                <button
-                  type="button"
-                  onClick={nextStep}
-                  style={{ ...btnPrimary, width: 'auto' }}
-                  onMouseEnter={e =>
-                    ((e.target as HTMLButtonElement).style.backgroundColor = '#1D4ED8')
-                  }
-                  onMouseLeave={e =>
-                    ((e.target as HTMLButtonElement).style.backgroundColor = '#2563EB')
-                  }
-                >
-                  Continuar
-                </button>
-              </div>
-            )}
+                </div>
+              )}
+            </div>
+
+            {/* Pie */}
+            <p className="mt-8 text-center text-sm text-[#94A3B8]">
+              Al registrarte aceptas nuestros{' '}
+              <a href="#" className="text-[#2563EB] hover:underline">
+                Términos
+              </a>{' '}
+              y{' '}
+              <a href="#" className="text-[#2563EB] hover:underline">
+                Política de privacidad
+              </a>
+            </p>
           </div>
-
-          {/* Pie */}
-          <p style={S.footerText}>
-            Al registrarte aceptas nuestros{' '}
-            <a href="#" style={S.footerLink}>
-              Términos
-            </a>{' '}
-            y{' '}
-            <a href="#" style={S.footerLink}>
-              Política de privacidad
-            </a>
-          </p>
         </div>
-      </main>
+      </div>
 
-      <style>{globalStyles}</style>
-    </div>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+        @media (max-width: 640px) {
+          input, select {
+            font-size: 16px !important;
+          }
+        }
+      `}</style>
+    </>
+  )
+}
   )
 }

@@ -119,6 +119,14 @@ export const rightPanel: CSSProperties = {
 export const formWrapper: CSSProperties = {
   width: '100%',
   maxWidth: '400px',
+  backgroundColor: '#FFFFFF',
+  borderRadius: '28px',
+  padding: '40px 36px',
+  boxShadow: '0 18px 45px rgba(15, 23, 42, 0.12)',
+}
+
+export const headingGroup: CSSProperties = {
+  textAlign: 'center',
 }
 
 export const heading: CSSProperties = {

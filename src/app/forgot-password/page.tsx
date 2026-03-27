@@ -555,10 +555,15 @@ export default function ForgotPasswordPage() {
     <div style={S.root}>
       {/* Header */}
       <header style={S.header}>
-        <div style={S.headerLogoBox}>
-          <BookIcon />
-        </div>
-        <span style={S.headerLogoText}>NovaLibros</span>
+        <a
+          href="/"
+          style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none', color: 'inherit' }}
+        >
+          <div style={S.headerLogoBox}>
+            <BookIcon />
+          </div>
+          <span style={S.headerLogoText}>NovaLibros</span>
+        </a>
       </header>
 
       {/* Main */}

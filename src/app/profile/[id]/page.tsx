@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useState } from 'react'
 
 // ─── Mock de usuario (en producción vendría del AuthContext) ──────────────────
@@ -364,12 +365,15 @@ export default function ProfilePage() {
       {/* ── Navbar ── */}
       <nav className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <Link
+            href="/"
+            className="flex items-center gap-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+          >
             <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center shrink-0">
               <BookIcon size={20} />
             </div>
             <span className="text-slate-900 text-xl font-bold tracking-tight">NovaLibros</span>
-          </div>
+          </Link>
           <div className="hidden sm:flex items-center gap-3">
             <a
               href="/"
@@ -759,12 +763,15 @@ export default function ProfilePage() {
       {/* Footer */}
       <footer className="bg-slate-800 border-t border-slate-700 mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
+          <Link
+            href="/"
+            className="flex items-center gap-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400"
+          >
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
               <BookIcon size={16} />
             </div>
             <span className="text-white font-bold">NovaLibros</span>
-          </div>
+          </Link>
           <span className="text-slate-500 text-sm">
             © 2025 NovaLibros. Todos los derechos reservados.
           </span>
