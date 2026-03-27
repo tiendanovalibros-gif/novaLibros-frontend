@@ -1,26 +1,9 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import * as S from "@/styles/login.styles";
-import {
-  btnPrimary,
-  btnPrimaryDisabled,
-  alertError,
-  alertErrorText,
-  dividerRow,
-  dividerLine,
-  dividerText,
-  label,
-  field,
-  getInputStyle,
-  inputFocusOn,
-  inputFocusOff,
-  globalStyles,
-  logoBox,
-  logoRow,
-  logoText,
-} from "@/styles/auth.styles";
+import { useState, type FormEvent } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/context/auth.context'
+import Iconify from '@/components/iconify'
 
 const BookIcon = () => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
@@ -39,7 +22,7 @@ const BookIcon = () => (
       strokeLinejoin="round"
     />
   </svg>
-);
+)
 
 const EyeIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -51,7 +34,7 @@ const EyeIcon = () => (
     />
     <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" />
   </svg>
-);
+)
 
 const EyeOffIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -77,7 +60,7 @@ const EyeOffIcon = () => (
       strokeLinecap="round"
     />
   </svg>
-);
+)
 
 const ErrorIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -93,160 +76,153 @@ const ErrorIcon = () => (
       strokeLinecap="round"
     />
   </svg>
-);
+)
 
 const STATS = [
-  { num: "+5.000", label: "Títulos" },
-  { num: "+800", label: "Autores" },
-  { num: "24h", label: "Reservas" },
-];
+  { num: '+5.000', label: 'Títulos' },
+  { num: '+800', label: 'Autores' },
+  { num: '24h', label: 'Reservas' },
+]
+
+const globalStyles = `
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (max-width: 640px) { input, select { font-size: 16px !important; } }
+`
 
 export default function LoginPage() {
-  const router = useRouter();
-  const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const router = useRouter()
+  const { login } = useAuth()
+  const [showPassword, setShowPassword] = useState(false)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault()
+    setError('')
 
     if (!email || !password) {
-      setError("Por favor completa todos los campos.");
-      return;
+      setError('Por favor completa todos los campos.')
+      return
     }
 
-    setLoading(true);
-
-    const API_URL = process.env.NEXT_PUBLIC_API_URL;
+    setLoading(true)
 
     try {
-      const res = await fetch(`${API_URL}/users/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          correo: email,
-          contrasena: password,
-        }),
-      });
-
-      if (!res.ok) {
-        let message = "Error al iniciar sesión";
-        try {
-          const data = await res.json();
-          if (data && typeof data.message === "string") {
-            message = data.message;
-          }
-        } catch {
-          // ignorar error al parsear JSON
-        }
-        throw new Error(message);
-      }
-
-      const data = await res.json();
-      // Aquí podrías guardar el token y datos de usuario, por ejemplo:
-      // localStorage.setItem('token', data.access_token)
-      console.log("Login exitoso:", data);
-
-      // Redirigir a la página principal
-      router.push("/");
+      await login({ correo: email, contrasena: password })
+      router.push('/')
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Error al iniciar sesión";
-      setError(message);
+      let message = 'Error al iniciar sesión'
+      if (err && typeof err === 'object' && 'message' in err) {
+        const maybeMessage = (err as { message?: unknown }).message
+        if (typeof maybeMessage === 'string') {
+          message = maybeMessage
+        }
+      }
+      setError(message)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
-    <div style={{ ...S.root, fontFamily: "'DM Sans', 'Segoe UI', sans-serif" }}>
+    <div className="flex min-h-screen bg-[#F8FAFC] font-['DM_Sans','Segoe_UI',sans-serif]">
       {/* ── Panel izquierdo ── */}
-      <div style={S.leftPanel} className="login-left-panel">
-        <div style={S.circleTopRight} />
-        <div style={S.circleBottomLeft} />
-        <div style={S.circleBottomRight} />
+      <div className="relative hidden basis-[45%] flex-shrink-0 flex-col justify-between overflow-hidden bg-[#334155] p-12 text-white md:flex">
+        <div className="pointer-events-none absolute -top-20 -right-20 h-80 w-80 rounded-full bg-[#2563EB] opacity-10" />
+        <div className="pointer-events-none absolute -bottom-10 left-[-60px] h-60 w-60 rounded-full bg-[#2563EB] opacity-10" />
+        <div className="pointer-events-none absolute -bottom-16 right-[20%] h-40 w-40 rounded-full bg-[#DBEAFE] opacity-20" />
 
         {/* Logo */}
-        <div style={{ ...logoRow, position: "relative", zIndex: 1 }}>
-          <div style={logoBox}>
+        <a href="/" className="relative z-[1] flex items-center gap-3 text-white no-underline">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#2563EB]">
             <BookIcon />
           </div>
-          <span style={logoText}>NovaLibros</span>
-        </div>
+          <span className="text-2xl font-bold">NovaLibros</span>
+        </a>
 
         {/* Hero text */}
-        <div style={S.leftContent}>
-          <p style={S.leftEyebrow}>Tu librería en línea</p>
-          <h2 style={S.leftHeading}>
+        <div className="relative z-[1] space-y-5">
+          <p className="text-[13px] font-medium uppercase tracking-[0.2em] text-[#94A3B8]">
+            Tu librería en línea
+          </p>
+          <h2 className="text-[36px] font-bold leading-tight text-white">
             Descubre tu próxima
             <br />
-            <span style={S.leftHeadingAccent}>gran lectura</span>
+            <span className="text-[#DBEAFE]">gran lectura</span>
           </h2>
-          <p style={S.leftBody}>
+          <p className="max-w-[340px] text-[15px] leading-relaxed text-[#CBD5F5]">
             Accede a miles de títulos, gestiona tus reservas y compras, todo desde un solo lugar.
           </p>
         </div>
 
         {/* Stats */}
-        <div style={S.statsRow}>
+        <div className="relative z-[1] flex gap-8">
           {STATS.map(stat => (
             <div key={stat.label}>
-              <div style={S.statNumber}>{stat.num}</div>
-              <div style={S.statLabel}>{stat.label}</div>
+              <div className="text-[22px] font-bold text-white">{stat.num}</div>
+              <div className="text-[13px] text-[#94A3B8]">{stat.label}</div>
             </div>
           ))}
         </div>
       </div>
 
       {/* ── Panel derecho ── */}
-      <div style={S.rightPanel}>
-        <div style={S.formWrapper}>
-          <h1 style={S.heading}>Bienvenido de vuelta</h1>
-          <p style={S.subheading}>Ingresa tus credenciales para continuar</p>
+      <div className="flex flex-1 items-center justify-center px-8 py-12">
+        <div className="w-full max-w-md rounded-[28px] bg-white px-9 py-10 shadow-[0_18px_45px_rgba(15,23,42,0.12)]">
+          <div className="text-center">
+            <h1 className="text-3xl font-bold text-[#0F172A]">NovaLibros</h1>
+            <p className="mt-2 text-[15px] text-[#475569]">Bienvenido de vuelta</p>
+          </div>
 
           {error && (
-            <div style={alertError}>
+            <div className="mt-6 mb-5 flex items-center gap-2 rounded-lg border border-[#EF4444] bg-[#FEE2E2] px-4 py-3 text-sm text-[#991B1B]">
               <ErrorIcon />
-              <span style={alertErrorText}>{error}</span>
+              <span>{error}</span>
             </div>
           )}
 
-          <form onSubmit={handleSubmit}>
+          <form className="mt-6 space-y-5" onSubmit={handleSubmit}>
             {/* Email */}
-            <div style={field}>
-              <label style={label}>Correo electrónico</label>
-              <input
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder="tucorreo@ejemplo.com"
-                style={getInputStyle(false)}
-                onFocus={e => inputFocusOn(e, false)}
-                onBlur={e => inputFocusOff(e, false)}
-              />
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-[#0F172A]">
+                Correo electrónico
+              </label>
+              <div className="relative">
+                <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-[#94A3B8]">
+                  <Iconify icon="mdi:email-outline" width={20} aria-hidden="true" />
+                </span>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="tucorreo@ejemplo.com"
+                  className="w-full rounded-lg border border-[#CBD5E1] bg-white py-3 pl-11 pr-3.5 text-[15px] text-[#0F172A] outline-none transition focus:border-[#2563EB]"
+                />
+              </div>
             </div>
 
             {/* Contraseña */}
-            <div style={field}>
-              <label style={label}>Contraseña</label>
-              <div style={{ position: "relative" }}>
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-[#0F172A]">Contraseña</label>
+              <div className="relative">
+                <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-[#94A3B8]">
+                  <Iconify icon="mdi:lock-outline" width={20} aria-hidden="true" />
+                </span>
                 <input
-                  type={showPassword ? "text" : "password"}
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  style={{ ...getInputStyle(false), paddingRight: "44px" }}
-                  onFocus={e => inputFocusOn(e, false)}
-                  onBlur={e => inputFocusOff(e, false)}
+                  className="w-full rounded-lg border border-[#CBD5E1] bg-white py-3 pl-11 pr-3.5 text-[15px] text-[#0F172A] outline-none transition focus:border-[#2563EB]"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  style={S.togglePasswordBtn}
+                  className="absolute inset-y-0 right-3 flex items-center text-[#94A3B8]"
+                  aria-label="Mostrar u ocultar contraseña"
                 >
                   {showPassword ? <EyeOffIcon /> : <EyeIcon />}
                 </button>
@@ -254,8 +230,11 @@ export default function LoginPage() {
             </div>
 
             {/* Olvidé contraseña */}
-            <div style={S.forgotRow}>
-              <a href="/forgot-password" style={S.forgotLink}>
+            <div className="text-right">
+              <a
+                href="/forgot-password"
+                className="text-[14px] font-medium text-[#2563EB] hover:text-[#1D4ED8]"
+              >
                 ¿Olvidaste tu contraseña?
               </a>
             </div>
@@ -264,36 +243,30 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              style={loading ? btnPrimaryDisabled : btnPrimary}
-              onMouseEnter={e => {
-                if (!loading) (e.target as HTMLButtonElement).style.backgroundColor = "#1D4ED8";
-              }}
-              onMouseLeave={e => {
-                if (!loading) (e.target as HTMLButtonElement).style.backgroundColor = "#2563EB";
-              }}
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#2563EB] px-4 py-3 text-[15px] font-semibold text-white transition hover:bg-[#1D4ED8] disabled:cursor-not-allowed disabled:bg-[#93C5FD]"
             >
-              {loading ? "Ingresando..." : "Iniciar sesión"}
+              {loading ? 'Ingresando...' : 'Iniciar sesión'}
             </button>
           </form>
 
           {/* Divider */}
-          <div style={dividerRow}>
-            <div style={dividerLine} />
-            <span style={dividerText}>o</span>
-            <div style={dividerLine} />
+          <div className="my-7 flex items-center gap-4">
+            <div className="h-px flex-1 bg-[#E2E8F0]" />
+            <span className="text-sm text-[#94A3B8]">o</span>
+            <div className="h-px flex-1 bg-[#E2E8F0]" />
           </div>
 
           {/* Registro */}
-          <p style={S.bottomText}>
-            ¿No tienes cuenta?{" "}
-            <a href="/register" style={S.bottomLink}>
+          <p className="text-center text-sm text-[#475569]">
+            ¿No tienes cuenta?{' '}
+            <a href="/register" className="font-semibold text-[#2563EB] hover:text-[#1D4ED8]">
               Regístrate gratis
             </a>
           </p>
         </div>
       </div>
 
-      <style>{globalStyles + S.responsiveStyles}</style>
+      <style>{globalStyles}</style>
     </div>
-  );
+  )
 }

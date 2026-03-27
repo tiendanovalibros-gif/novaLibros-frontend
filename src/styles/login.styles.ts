@@ -1,12 +1,12 @@
-import { CSSProperties } from 'react';
-import { colors } from './auth.styles';
+import { CSSProperties } from 'react'
+import { colors } from './auth.styles'
 
 // ─── Contenedor raíz ──────────────────────────────────────────────────────────
 export const root: CSSProperties = {
   minHeight: '100vh',
   backgroundColor: colors.bgGeneral,
   display: 'flex',
-};
+}
 
 // ─── Panel izquierdo (decorativo) ─────────────────────────────────────────────
 export const leftPanel: CSSProperties = {
@@ -18,7 +18,7 @@ export const leftPanel: CSSProperties = {
   padding: '48px',
   position: 'relative',
   overflow: 'hidden',
-};
+}
 
 export const circleTopRight: CSSProperties = {
   position: 'absolute',
@@ -29,7 +29,7 @@ export const circleTopRight: CSSProperties = {
   borderRadius: '50%',
   backgroundColor: colors.primary,
   opacity: 0.12,
-};
+}
 
 export const circleBottomLeft: CSSProperties = {
   position: 'absolute',
@@ -40,7 +40,7 @@ export const circleBottomLeft: CSSProperties = {
   borderRadius: '50%',
   backgroundColor: colors.primary,
   opacity: 0.08,
-};
+}
 
 export const circleBottomRight: CSSProperties = {
   position: 'absolute',
@@ -51,12 +51,12 @@ export const circleBottomRight: CSSProperties = {
   borderRadius: '50%',
   backgroundColor: colors.primarySoft,
   opacity: 0.07,
-};
+}
 
 export const leftContent: CSSProperties = {
   position: 'relative',
   zIndex: 1,
-};
+}
 
 export const leftEyebrow: CSSProperties = {
   color: colors.textDisabled,
@@ -65,7 +65,7 @@ export const leftEyebrow: CSSProperties = {
   letterSpacing: '2px',
   textTransform: 'uppercase',
   marginBottom: '16px',
-};
+}
 
 export const leftHeading: CSSProperties = {
   color: '#FFFFFF',
@@ -74,11 +74,11 @@ export const leftHeading: CSSProperties = {
   lineHeight: 1.2,
   letterSpacing: '-0.5px',
   margin: '0 0 20px',
-};
+}
 
 export const leftHeadingAccent: CSSProperties = {
   color: colors.primarySoft,
-};
+}
 
 export const leftBody: CSSProperties = {
   color: colors.textDisabled,
@@ -86,26 +86,26 @@ export const leftBody: CSSProperties = {
   lineHeight: 1.7,
   maxWidth: '340px',
   margin: 0,
-};
+}
 
 export const statsRow: CSSProperties = {
   position: 'relative',
   zIndex: 1,
   display: 'flex',
   gap: '32px',
-};
+}
 
 export const statNumber: CSSProperties = {
   color: '#FFFFFF',
   fontSize: '22px',
   fontWeight: 700,
-};
+}
 
 export const statLabel: CSSProperties = {
   color: '#64748B',
   fontSize: '13px',
   marginTop: '2px',
-};
+}
 
 // ─── Panel derecho (formulario) ───────────────────────────────────────────────
 export const rightPanel: CSSProperties = {
@@ -114,12 +114,20 @@ export const rightPanel: CSSProperties = {
   alignItems: 'center',
   justifyContent: 'center',
   padding: '48px 32px',
-};
+}
 
 export const formWrapper: CSSProperties = {
   width: '100%',
   maxWidth: '400px',
-};
+  backgroundColor: '#FFFFFF',
+  borderRadius: '28px',
+  padding: '40px 36px',
+  boxShadow: '0 18px 45px rgba(15, 23, 42, 0.12)',
+}
+
+export const headingGroup: CSSProperties = {
+  textAlign: 'center',
+}
 
 export const heading: CSSProperties = {
   color: colors.textPrimary,
@@ -127,25 +135,25 @@ export const heading: CSSProperties = {
   fontWeight: 700,
   letterSpacing: '-0.4px',
   margin: '0 0 8px',
-};
+}
 
 export const subheading: CSSProperties = {
   color: colors.textSecondary,
   fontSize: '15px',
   margin: '0 0 36px',
-};
+}
 
 export const forgotLink: CSSProperties = {
   color: colors.primary,
   fontSize: '14px',
   fontWeight: 500,
   textDecoration: 'none',
-};
+}
 
 export const forgotRow: CSSProperties = {
   textAlign: 'right',
   marginBottom: '28px',
-};
+}
 
 export const togglePasswordBtn: CSSProperties = {
   position: 'absolute',
@@ -159,24 +167,24 @@ export const togglePasswordBtn: CSSProperties = {
   padding: '4px',
   display: 'flex',
   alignItems: 'center',
-};
+}
 
 export const bottomText: CSSProperties = {
   textAlign: 'center',
   color: colors.textSecondary,
   fontSize: '14px',
   margin: 0,
-};
+}
 
 export const bottomLink: CSSProperties = {
   color: colors.primary,
   fontWeight: 600,
   textDecoration: 'none',
-};
+}
 
 // ─── Responsive (clase CSS) ───────────────────────────────────────────────────
 export const responsiveStyles = `
   @media (max-width: 768px) {
     .login-left-panel { display: none !important; }
   }
-`;
+`
