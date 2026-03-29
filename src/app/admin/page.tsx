@@ -348,7 +348,9 @@ export default function AdminLibrosPage() {
           (!q ||
             l.titulo.toLowerCase().includes(q) ||
             l.isbn.toLowerCase().includes(q) ||
-            nombreAutor(l.idAutor).toLowerCase().includes(q)) &&
+            (autores.find(a => a.id === l.idAutor)?.nombre ?? `autor #${l.idAutor}`)
+              .toLowerCase()
+              .includes(q)) &&
           (filtroEstado === 'todos' || l.estado === filtroEstado)
         )
       }),
@@ -380,7 +382,7 @@ export default function AdminLibrosPage() {
     )
   }
 
-  if (user && user.rol !== 'root' && user.rol !== 'administrador') {
+  if (user && user.rol !== 'administrador') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-100 text-slate-700">
         <div className="p-6 bg-white rounded-xl shadow-md text-center">
@@ -469,13 +471,32 @@ export default function AdminLibrosPage() {
     return true
   }
 
-  const payload = () => ({
-    ...form,
+  // Payload para CREAR — incluye idAutor e idEditorial
+  const payloadCrear = () => ({
+    titulo: form.titulo,
     idAutor: Number(form.idAutor),
-    idGenero: Number(form.idGenero),
+    idGeneros: [Number(form.idGenero)],
     idEditorial: Number(form.idEditorial),
     anoPublicacion: Number(form.anoPublicacion),
     precio: Number(form.precio),
+    isbn: form.isbn,
+    idioma: form.idioma,
+    descripcion: form.descripcion,
+    imagenPortada: form.imagenPortada,
+    estado: form.estado,
+  })
+
+  // Payload para EDITAR — sin idAutor ni idEditorial (bug del backend)
+  const payloadEditar = () => ({
+    titulo: form.titulo,
+    idGeneros: [Number(form.idGenero)],
+    anoPublicacion: Number(form.anoPublicacion),
+    precio: Number(form.precio),
+    isbn: form.isbn,
+    idioma: form.idioma,
+    descripcion: form.descripcion,
+    imagenPortada: form.imagenPortada,
+    estado: form.estado,
   })
 
   const handleCrear = async () => {
@@ -484,7 +505,7 @@ export default function AdminLibrosPage() {
     try {
       const nuevo = await apiFetch<Libro>('/libros', {
         method: 'POST',
-        body: JSON.stringify(payload()),
+        body: JSON.stringify(payloadCrear()),
       })
       setLibros(prev => [nuevo, ...prev])
       cerrar()
@@ -501,7 +522,7 @@ export default function AdminLibrosPage() {
     try {
       const u = await apiFetch<Libro>(`/libros/${libroActual.id}`, {
         method: 'PATCH',
-        body: JSON.stringify(payload()),
+        body: JSON.stringify(payloadEditar()),
       })
       setLibros(prev => prev.map(l => (l.id === libroActual.id ? u : l)))
       cerrar()
@@ -528,27 +549,27 @@ export default function AdminLibrosPage() {
 
   const setF = (key: string, value: string | number) => setForm(prev => ({ ...prev, [key]: value }))
 
-  const FormLibro = ({ readOnly = false }: { readOnly?: boolean }) => (
+  const renderFormLibro = (readOnly = false) => (
     <div className="flex flex-col gap-4">
       {formError && (
         <div className="bg-red-50 border border-red-300 rounded-lg px-4 py-3 text-red-800 text-sm">
           {formError}
         </div>
       )}
+
       <Input
-        key="titulo"
         label="Título *"
         value={form.titulo}
         onChange={e => setF('titulo', e.target.value)}
         placeholder="Nombre del libro"
         disabled={readOnly}
       />
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Select
-          key="autor"
           label="Autor *"
           value={form.idAutor}
-          onChange={e => setF('idAutor', e.target.value)}
+          onChange={e => setF('idAutor', Number(e.target.value) || 0)}
           disabled={readOnly}
         >
           <option value={0}>Seleccionar autor...</option>
@@ -558,11 +579,11 @@ export default function AdminLibrosPage() {
             </option>
           ))}
         </Select>
+
         <Select
-          key="genero"
           label="Género *"
           value={form.idGenero}
-          onChange={e => setF('idGenero', e.target.value)}
+          onChange={e => setF('idGenero', Number(e.target.value) || 0)}
           disabled={readOnly}
         >
           <option value={0}>Seleccionar género...</option>
@@ -573,12 +594,12 @@ export default function AdminLibrosPage() {
           ))}
         </Select>
       </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Select
-          key="editorial"
           label="Editorial *"
           value={form.idEditorial}
-          onChange={e => setF('idEditorial', e.target.value)}
+          onChange={e => setF('idEditorial', Number(e.target.value) || 0)}
           disabled={readOnly}
         >
           <option value={0}>Seleccionar editorial...</option>
@@ -588,8 +609,8 @@ export default function AdminLibrosPage() {
             </option>
           ))}
         </Select>
+
         <Select
-          key="idioma"
           label="Idioma"
           value={form.idioma}
           onChange={e => setF('idioma', e.target.value)}
@@ -602,9 +623,9 @@ export default function AdminLibrosPage() {
           ))}
         </Select>
       </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Input
-          key="anoPublicacion"
           label="Año publicación"
           type="number"
           value={form.anoPublicacion}
@@ -612,7 +633,6 @@ export default function AdminLibrosPage() {
           disabled={readOnly}
         />
         <Input
-          key="precio"
           label="Precio (COP) *"
           type="number"
           value={form.precio}
@@ -621,7 +641,6 @@ export default function AdminLibrosPage() {
           disabled={readOnly}
         />
         <Select
-          key="estado"
           label="Estado"
           value={form.estado}
           onChange={e => setF('estado', e.target.value)}
@@ -634,26 +653,26 @@ export default function AdminLibrosPage() {
           ))}
         </Select>
       </div>
+
       <Input
-        key="isbn"
         label="ISBN *"
         value={form.isbn}
         onChange={e => setF('isbn', e.target.value)}
         placeholder="978-0000000000"
         disabled={readOnly}
       />
+
       <Input
-        key="imagenPortada"
         label="URL imagen portada"
         value={form.imagenPortada}
         onChange={e => setF('imagenPortada', e.target.value)}
         placeholder="https://..."
         disabled={readOnly}
       />
+
       <div>
         <label className="block text-slate-700 text-sm font-semibold mb-1.5">Descripción</label>
         <textarea
-          key="descripcion"
           value={form.descripcion}
           onChange={e => setF('descripcion', e.target.value)}
           disabled={readOnly}
@@ -854,7 +873,7 @@ export default function AdminLibrosPage() {
 
       {dialogMode === 'create' && (
         <Modal title="Agregar nuevo libro" onClose={cerrar}>
-          <FormLibro />
+          {renderFormLibro()}
           <div className="flex gap-3 justify-end mt-6 pt-4 border-t border-slate-100">
             <button
               onClick={cerrar}
@@ -874,7 +893,7 @@ export default function AdminLibrosPage() {
       )}
       {dialogMode === 'edit' && (
         <Modal title={`Editar: ${libroActual?.titulo}`} onClose={cerrar}>
-          <FormLibro />
+          {renderFormLibro()}
           <div className="flex gap-3 justify-end mt-6 pt-4 border-t border-slate-100">
             <button
               onClick={cerrar}
@@ -894,7 +913,7 @@ export default function AdminLibrosPage() {
       )}
       {dialogMode === 'view' && (
         <Modal title="Detalles del libro" onClose={cerrar}>
-          <FormLibro readOnly />
+          {renderFormLibro(true)}
           <div className="flex justify-end mt-6 pt-4 border-t border-slate-100">
             <button
               onClick={cerrar}

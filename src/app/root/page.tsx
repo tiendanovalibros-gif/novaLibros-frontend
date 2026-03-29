@@ -1,6 +1,9 @@
 'use client'
 
 import { useState } from 'react'
+import { useAuth } from '@/context/auth.context'
+import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL
 
@@ -149,6 +152,8 @@ const Modal = ({
 )
 
 export default function AdminLibrosPage() {
+  const { user, isAuthenticated, loading } = useAuth()
+  const router = useRouter()
   const [dialogOpen, setDialogOpen] = useState(false)
   const [formError, setFormError] = useState('')
   const [saving, setSaving] = useState(false)
@@ -163,6 +168,22 @@ export default function AdminLibrosPage() {
     telefono: '',
     estadoCuenta: true,
   })
+  // 🔐 PROTECCIÓN ROOT
+  useEffect(() => {
+    if (loading) return
+
+    // Si no está autenticado → login
+    if (!isAuthenticated) {
+      router.push('/login')
+      return
+    }
+
+    // Si está autenticado pero no es root → home
+    if (user?.rol !== 'root') {
+      router.push('/')
+      return
+    }
+  }, [loading, isAuthenticated, user?.rol, router])
 
   const closeDialog = () => {
     setDialogOpen(false)
@@ -220,17 +241,31 @@ export default function AdminLibrosPage() {
     return true
   }
 
+  const { token } = useAuth()
+
   const handleCrearAdmin = async () => {
     if (!validar()) return
+    if (!token) {
+      setFormError('No hay token de sesión. Inicia sesión nuevamente.')
+      return
+    }
+
     setSaving(true)
+    setFormError('')
+
     try {
       await apiFetch('/users/register-admin', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify(adminForm),
       })
+
       closeDialog()
-    } catch (e: unknown) {
-      setFormError((e as { message?: string })?.message ?? 'Error al crear el administrador')
+    } catch (e: any) {
+      setFormError(e.message ?? 'Error al crear el administrador')
     } finally {
       setSaving(false)
     }
@@ -241,9 +276,14 @@ export default function AdminLibrosPage() {
       <nav className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center">
+            <button
+              type="button"
+              onClick={() => router.push('/')}
+              className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors"
+              aria-label="Ir al inicio"
+            >
               <BookIcon />
-            </div>
+            </button>
             <div>
               <span className="text-slate-900 text-base font-bold">NovaLibros</span>
               <span className="ml-2 text-xs text-slate-400 font-medium uppercase tracking-wider">

@@ -123,8 +123,12 @@ export default function LoginPage() {
 
     setLoading(true)
     try {
-      await login({ correo: email, contrasena: password })
-      router.push('/')
+      const user = await login({ correo: email, contrasena: password })
+        if (user.rol === 'root') {
+          router.push('/root')
+        } else {
+          router.push('/')
+        }
     } catch (err) {
       console.error('Login error', err)
       setError('Credenciales incorrectas o el servidor no está disponible.')
