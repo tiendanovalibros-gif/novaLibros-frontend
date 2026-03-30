@@ -1,24 +1,20 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import * as S from '@/styles/forgot-password.styles'
-import {
-  btnPrimary,
-  btnPrimaryDisabled,
-  label,
-  field,
-  getInputStyle,
-  inputFocusOn,
-  inputFocusOff,
-  fieldErrorText,
-  alertError,
-  alertErrorText,
-  globalStyles,
-  colors,
-} from '@/styles/auth.styles'
+import { useForgotPassword } from "@/hooks/useForgotPassword";
+import { useStepEmail } from "@/hooks/useStepEmail";
+import { useStepConfirmation } from "@/hooks/useStepConfirmation";
+import { useStepNewPassword } from "@/hooks/useStepNewPassword";
+import type { ForgotPasswordStep } from "@/types/forgotPassword.types";
 
-// ─── Tipos ────────────────────────────────────────────────────────────────────
-type Step = 'email' | 'confirmation' | 'new-password' | 'done'
+// ─── Clases ───────────────────────────────────────────────────────────────────
+const inputClass = (hasError: boolean) =>
+  `w-full rounded-lg border px-4 py-3 text-[15px] text-slate-900 outline-none transition-colors focus:border-blue-600 ${hasError ? "border-red-500 bg-red-100" : "border-slate-300 bg-white"}`;
+
+const labelClass = "mb-2 block text-[14px] font-semibold text-slate-900";
+const fieldClass = "mb-5";
+const errorTextClass = "mt-1.5 text-[12px] text-red-800";
+const primaryButtonClass =
+  "w-full rounded-lg bg-blue-600 py-3 text-[15px] font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300";
 
 // ─── Iconos ───────────────────────────────────────────────────────────────────
 const BookIcon = () => (
@@ -38,43 +34,43 @@ const BookIcon = () => (
       strokeLinejoin="round"
     />
   </svg>
-)
+);
 
-const LockIcon = ({ color = colors.primary }: { color?: string }) => (
-  <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
-    <rect x="3" y="11" width="18" height="11" rx="2" stroke={color} strokeWidth="2" />
-    <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke={color} strokeWidth="2" strokeLinecap="round" />
+const LockIcon = ({ className }: { className?: string }) => (
+  <svg className={className} width="26" height="26" viewBox="0 0 24 24" fill="none">
+    <rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" strokeWidth="2" />
+    <path
+      d="M7 11V7a5 5 0 0 1 10 0v4"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+    />
   </svg>
-)
+);
 
-const MailIcon = () => (
-  <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+const MailIcon = ({ className }: { className?: string }) => (
+  <svg className={className} width="26" height="26" viewBox="0 0 24 24" fill="none">
     <path
       d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"
-      stroke={colors.primary}
+      stroke="currentColor"
       strokeWidth="2"
       strokeLinecap="round"
     />
-    <polyline
-      points="22,6 12,13 2,6"
-      stroke={colors.primary}
-      strokeWidth="2"
-      strokeLinecap="round"
-    />
+    <polyline points="22,6 12,13 2,6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
   </svg>
-)
+);
 
-const CheckIcon = ({ size = 28 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+const CheckIcon = ({ size = 28, className }: { size?: number; className?: string }) => (
+  <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none">
     <polyline
       points="20 6 9 17 4 12"
-      stroke={colors.successText}
+      stroke="currentColor"
       strokeWidth="2.5"
       strokeLinecap="round"
       strokeLinejoin="round"
     />
   </svg>
-)
+);
 
 const ArrowLeftIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -86,7 +82,7 @@ const ArrowLeftIcon = () => (
       strokeLinejoin="round"
     />
   </svg>
-)
+);
 
 const EyeIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -98,7 +94,7 @@ const EyeIcon = () => (
     />
     <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" />
   </svg>
-)
+);
 
 const EyeOffIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -124,463 +120,328 @@ const EyeOffIcon = () => (
       strokeLinecap="round"
     />
   </svg>
-)
+);
 
-const ErrorAlertIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-    <circle cx="12" cy="12" r="10" stroke="#991B1B" strokeWidth="2" />
-    <line x1="12" y1="8" x2="12" y2="12" stroke="#991B1B" strokeWidth="2" strokeLinecap="round" />
+const ErrorAlertIcon = ({ className }: { className?: string }) => (
+  <svg className={className} width="16" height="16" viewBox="0 0 24 24" fill="none">
+    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+    <line
+      x1="12"
+      y1="8"
+      x2="12"
+      y2="12"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+    />
     <line
       x1="12"
       y1="16"
       x2="12.01"
       y2="16"
-      stroke="#991B1B"
+      stroke="currentColor"
       strokeWidth="2"
       strokeLinecap="round"
     />
   </svg>
-)
+);
 
-// ─── Indicador de pasos (3 dots) ──────────────────────────────────────────────
-const STEP_ORDER: Step[] = ['email', 'confirmation', 'new-password']
+// ─── Steps indicator ──────────────────────────────────────────────────────────
+const STEP_ORDER: ForgotPasswordStep[] = ["email", "confirmation", "new-password"];
 
-const StepsIndicator = ({ current }: { current: Step }) => {
-  const idx = STEP_ORDER.indexOf(current)
+const StepsIndicator = ({ current }: { current: ForgotPasswordStep }) => {
+  const idx = STEP_ORDER.indexOf(current);
   return (
-    <div style={S.stepsIndicator}>
+    <div className="mb-6 flex gap-2">
       {STEP_ORDER.map((_, i) => (
-        <div key={i} style={i <= idx ? S.stepDotActive : S.stepDotInactive} />
+        <div
+          key={i}
+          className={`h-1 flex-1 rounded ${i <= idx ? "bg-blue-600" : "bg-slate-200"}`}
+        />
       ))}
     </div>
-  )
-}
+  );
+};
 
-// ─── PASO 1: Ingresar correo ──────────────────────────────────────────────────
+const BackToLogin = () => (
+  <div className="mt-6 text-center">
+    <a
+      href="/login"
+      className="inline-flex items-center gap-2 text-[14px] font-medium text-slate-600 hover:text-slate-800"
+    >
+      <ArrowLeftIcon />
+      Volver al inicio de sesión
+    </a>
+  </div>
+);
+
+// ─── Step 1 ───────────────────────────────────────────────────────────────────
 function StepEmail({ onNext }: { onNext: (email: string) => void }) {
-  const [email, setEmail] = useState('')
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    if (!email.trim() || !/\S+@\S+\.\S+/.test(email)) {
-      setError('Ingresa un correo electrónico válido.')
-      return
-    }
-    setLoading(true)
-    // TODO: llamar a auth.service.ts → forgotPassword(email)
-    setTimeout(() => {
-      setLoading(false)
-      onNext(email)
-    }, 1200)
-  }
+  const { email, error, loading, handleChange, handleSubmit } = useStepEmail(onNext);
 
   return (
     <>
       <StepsIndicator current="email" />
-
-      <div style={S.iconWrapper}>
+      <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-xl bg-blue-100 text-blue-600">
         <MailIcon />
       </div>
-
-      <h1 style={S.cardTitle}>¿Olvidaste tu contraseña?</h1>
-      <p style={S.cardSubtitle}>
+      <h1 className="mb-2 text-[24px] font-bold tracking-[-0.4px] text-slate-900">
+        ¿Olvidaste tu contraseña?
+      </h1>
+      <p className="mb-6 text-[15px] text-slate-600">
         Ingresa el correo de tu cuenta y te enviaremos un enlace para restablecerla.
       </p>
 
       {error && (
-        <div style={alertError}>
-          <ErrorAlertIcon />
-          <span style={alertErrorText}>{error}</span>
+        <div className="mb-5 flex items-center gap-2 rounded-lg border border-red-500 bg-red-100 px-4 py-3 text-[14px] text-red-800">
+          <ErrorAlertIcon className="text-red-800" />
+          <span>{error}</span>
         </div>
       )}
 
       <form onSubmit={handleSubmit}>
-        <div style={field}>
-          <label style={label}>Correo electrónico</label>
+        <div className={fieldClass}>
+          <label className={labelClass}>Correo electrónico</label>
           <input
             type="email"
             value={email}
-            onChange={e => {
-              setEmail(e.target.value)
-              setError('')
-            }}
+            onChange={e => handleChange(e.target.value)}
             placeholder="tucorreo@ejemplo.com"
-            style={getInputStyle(!!error)}
-            onFocus={e => inputFocusOn(e, !!error)}
-            onBlur={e => inputFocusOff(e, !!error)}
+            className={inputClass(!!error)}
           />
-          {error && <p style={fieldErrorText}>{error}</p>}
+          {error && <p className={errorTextClass}>{error}</p>}
         </div>
-
-        <button
-          type="submit"
-          disabled={loading}
-          style={loading ? btnPrimaryDisabled : btnPrimary}
-          onMouseEnter={e => {
-            if (!loading) (e.target as HTMLButtonElement).style.backgroundColor = '#1D4ED8'
-          }}
-          onMouseLeave={e => {
-            if (!loading) (e.target as HTMLButtonElement).style.backgroundColor = '#2563EB'
-          }}
-        >
-          {loading ? 'Enviando...' : 'Enviar enlace de recuperación'}
+        <button type="submit" disabled={loading} className={primaryButtonClass}>
+          {loading ? "Enviando..." : "Enviar enlace de recuperación"}
         </button>
       </form>
-
-      <div style={{ textAlign: 'center' }}>
-        <a href="/login" style={S.backLink}>
-          <ArrowLeftIcon />
-          Volver al inicio de sesión
-        </a>
-      </div>
+      <BackToLogin />
     </>
-  )
+  );
 }
 
-// ─── PASO 2: Confirmación de envío ────────────────────────────────────────────
+// ─── Step 2 ───────────────────────────────────────────────────────────────────
 function StepConfirmation({ email, onNext }: { email: string; onNext: () => void }) {
-  const [resent, setResent] = useState(false)
-  const [countdown, setCountdown] = useState(0)
-
-  const handleResend = () => {
-    setResent(true)
-    setCountdown(30)
-    // TODO: llamar a auth.service.ts → resendEmail(email)
-    const interval = setInterval(() => {
-      setCountdown(prev => {
-        if (prev <= 1) {
-          clearInterval(interval)
-          return 0
-        }
-        return prev - 1
-      })
-    }, 1000)
-  }
+  const { resent, countdown, handleResend } = useStepConfirmation();
 
   return (
     <>
       <StepsIndicator current="confirmation" />
-
-      <div style={S.successCircle}>
-        <CheckIcon />
+      <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-full border-2 border-green-200 bg-green-100 text-green-600">
+        <CheckIcon className="text-green-600" />
       </div>
-
-      <h1 style={S.cardTitle}>Revisa tu correo</h1>
-      <p style={S.cardSubtitle}>
-        Enviamos un enlace de recuperación a <span style={S.emailHighlight}>{email}</span>. El
-        enlace expira en 15 minutos.
+      <h1 className="mb-2 text-[24px] font-bold tracking-[-0.4px] text-slate-900">
+        Revisa tu correo
+      </h1>
+      <p className="mb-6 text-[15px] text-slate-600">
+        Enviamos un enlace de recuperación a{" "}
+        <span className="font-semibold text-slate-900">{email}</span>. El enlace expira en 15
+        minutos.
       </p>
-
-      {/* Info box */}
-      <div
-        style={{
-          backgroundColor: colors.infoBg,
-          border: `1px solid ${colors.infoBorder}`,
-          borderRadius: '8px',
-          padding: '14px 16px',
-          marginBottom: '28px',
-          display: 'flex',
-          gap: '10px',
-          alignItems: 'flex-start',
-        }}
-      >
+      <div className="mb-7 flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-blue-800">
         <svg
           width="16"
           height="16"
           viewBox="0 0 24 24"
           fill="none"
-          style={{ marginTop: '2px', flexShrink: 0 }}
+          className="mt-0.5 flex-shrink-0"
         >
-          <circle cx="12" cy="12" r="10" stroke={colors.infoText} strokeWidth="2" />
-          <line
-            x1="12"
-            y1="8"
-            x2="12"
-            y2="8"
-            stroke={colors.infoText}
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
+          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
           <line
             x1="12"
             y1="12"
             x2="12"
             y2="16"
-            stroke={colors.infoText}
+            stroke="currentColor"
             strokeWidth="2"
             strokeLinecap="round"
           />
         </svg>
-        <p style={{ color: colors.infoText, fontSize: '13px', margin: 0, lineHeight: 1.5 }}>
+        <p className="text-[13px] leading-[1.5]">
           Si no ves el correo, revisa tu carpeta de spam o correo no deseado.
         </p>
       </div>
-
-      {/* Botón continuar (simula que ya hicieron clic en el enlace) */}
-      <button
-        style={btnPrimary}
-        onClick={onNext}
-        onMouseEnter={e => ((e.target as HTMLButtonElement).style.backgroundColor = '#1D4ED8')}
-        onMouseLeave={e => ((e.target as HTMLButtonElement).style.backgroundColor = '#2563EB')}
-      >
+      <button className={primaryButtonClass} onClick={onNext}>
         Ya tengo el enlace, continuar
       </button>
-
-      {/* Reenviar */}
-      <div style={S.resendRow}>
+      <div className="mt-5 text-center">
         {resent && countdown > 0 ? (
-          <p style={S.resendText}>
-            Correo reenviado. Puedes intentarlo de nuevo en{' '}
-            <strong style={{ color: colors.textPrimary }}>{countdown}s</strong>
+          <p className="text-[14px] text-slate-600">
+            Correo reenviado. Puedes intentarlo de nuevo en{" "}
+            <strong className="text-slate-900">{countdown}s</strong>
           </p>
         ) : (
-          <p style={S.resendText}>
-            ¿No te llegó?{' '}
-            <button style={S.resendBtn} onClick={handleResend}>
+          <p className="text-[14px] text-slate-600">
+            ¿No te llegó?{" "}
+            <button
+              className="font-semibold text-blue-600 hover:text-blue-700"
+              onClick={handleResend}
+            >
               Reenviar correo
             </button>
           </p>
         )}
       </div>
-
-      <div style={{ textAlign: 'center' }}>
-        <a href="/login" style={S.backLink}>
-          <ArrowLeftIcon />
-          Volver al inicio de sesión
-        </a>
-      </div>
+      <BackToLogin />
     </>
-  )
+  );
 }
 
-// ─── PASO 3: Nueva contraseña ─────────────────────────────────────────────────
+// ─── Step 3 ───────────────────────────────────────────────────────────────────
 function StepNewPassword({ onDone }: { onDone: () => void }) {
-  const [password, setPassword] = useState('')
-  const [confirm, setConfirm] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirm, setShowConfirm] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [errors, setErrors] = useState<{ password?: string; confirm?: string }>({})
-
-  const strength = S.getStrengthInfo(password.length)
-
-  const validate = () => {
-    const e: typeof errors = {}
-    if (password.length < 8) e.password = 'Mínimo 8 caracteres'
-    if (password !== confirm) e.confirm = 'Las contraseñas no coinciden'
-    if (!confirm.trim()) e.confirm = 'Campo requerido'
-    setErrors(e)
-    return Object.keys(e).length === 0
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!validate()) return
-    setLoading(true)
-    // TODO: llamar a auth.service.ts → resetPassword(token, password)
-    setTimeout(() => {
-      setLoading(false)
-      onDone()
-    }, 1200)
-  }
+  const {
+    password,
+    setPassword,
+    confirm,
+    setConfirm,
+    showPassword,
+    setShowPassword,
+    showConfirm,
+    setShowConfirm,
+    loading,
+    errors,
+    setErrors,
+    strength,
+    handleSubmit,
+  } = useStepNewPassword(onDone);
 
   return (
     <>
       <StepsIndicator current="new-password" />
-
-      <div style={S.iconWrapper}>
-        <LockIcon />
+      <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-xl bg-blue-100 text-blue-600">
+        <LockIcon className="text-blue-600" />
       </div>
-
-      <h1 style={S.cardTitle}>Nueva contraseña</h1>
-      <p style={S.cardSubtitle}>Crea una contraseña segura. Debe tener al menos 8 caracteres.</p>
+      <h1 className="mb-2 text-[24px] font-bold tracking-[-0.4px] text-slate-900">
+        Nueva contraseña
+      </h1>
+      <p className="mb-6 text-[15px] text-slate-600">
+        Crea una contraseña segura. Debe tener al menos 8 caracteres.
+      </p>
 
       <form onSubmit={handleSubmit}>
-        {/* Nueva contraseña */}
-        <div style={field}>
-          <label style={label}>Nueva contraseña</label>
-          <div style={{ position: 'relative' }}>
+        <div className={fieldClass}>
+          <label className={labelClass}>Nueva contraseña</label>
+          <div className="relative">
             <input
-              type={showPassword ? 'text' : 'password'}
+              type={showPassword ? "text" : "password"}
               value={password}
               onChange={e => {
-                setPassword(e.target.value)
-                setErrors(p => ({ ...p, password: '' }))
+                setPassword(e.target.value);
+                setErrors(p => ({ ...p, password: "" }));
               }}
               placeholder="Mínimo 8 caracteres"
-              style={{ ...getInputStyle(!!errors.password), paddingRight: '44px' }}
-              onFocus={e => inputFocusOn(e, !!errors.password)}
-              onBlur={e => inputFocusOff(e, !!errors.password)}
+              className={`${inputClass(!!errors.password)} pr-11`}
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              style={S.togglePasswordBtn}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-500"
             >
               {showPassword ? <EyeOffIcon /> : <EyeIcon />}
             </button>
           </div>
-
-          {/* Barra de fuerza */}
           {password.length > 0 && (
             <>
-              <div style={S.strengthRow}>
+              <div className="mt-2 flex gap-1">
                 {[1, 2, 3, 4].map(i => (
                   <div
                     key={i}
-                    style={{
-                      flex: 1,
-                      height: '3px',
-                      borderRadius: '2px',
-                      transition: 'background-color 0.2s',
-                      backgroundColor: password.length >= i * 2 ? strength.color : '#E2E8F0',
-                    }}
+                    className={`h-[3px] flex-1 rounded-[2px] transition-colors ${password.length >= i * 2 ? strength.barClass : "bg-slate-200"}`}
                   />
                 ))}
               </div>
               {strength.label && (
-                <p style={{ ...S.strengthLabel, color: strength.color }}>{strength.label}</p>
+                <p className={`mt-1.5 text-[12px] font-medium ${strength.textClass}`}>
+                  {strength.label}
+                </p>
               )}
             </>
           )}
-          {errors.password && <p style={fieldErrorText}>{errors.password}</p>}
+          {errors.password && <p className={errorTextClass}>{errors.password}</p>}
         </div>
 
-        {/* Confirmar contraseña */}
-        <div style={field}>
-          <label style={label}>Confirmar contraseña</label>
-          <div style={{ position: 'relative' }}>
+        <div className={fieldClass}>
+          <label className={labelClass}>Confirmar contraseña</label>
+          <div className="relative">
             <input
-              type={showConfirm ? 'text' : 'password'}
+              type={showConfirm ? "text" : "password"}
               value={confirm}
               onChange={e => {
-                setConfirm(e.target.value)
-                setErrors(p => ({ ...p, confirm: '' }))
+                setConfirm(e.target.value);
+                setErrors(p => ({ ...p, confirm: "" }));
               }}
               placeholder="Repite tu contraseña"
-              style={{ ...getInputStyle(!!errors.confirm), paddingRight: '44px' }}
-              onFocus={e => inputFocusOn(e, !!errors.confirm)}
-              onBlur={e => inputFocusOff(e, !!errors.confirm)}
+              className={`${inputClass(!!errors.confirm)} pr-11`}
             />
             <button
               type="button"
               onClick={() => setShowConfirm(!showConfirm)}
-              style={S.togglePasswordBtn}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-500"
             >
               {showConfirm ? <EyeOffIcon /> : <EyeIcon />}
             </button>
           </div>
-
-          {/* Indicador de coincidencia */}
           {confirm.length > 0 && (
             <p
-              style={{
-                fontSize: '12px',
-                marginTop: '5px',
-                color: password === confirm ? colors.successText : colors.errorText,
-                fontWeight: 500,
-              }}
+              className={`mt-1.5 text-[12px] font-medium ${password === confirm ? "text-green-600" : "text-red-600"}`}
             >
               {password === confirm
-                ? '✓ Las contraseñas coinciden'
-                : '✗ Las contraseñas no coinciden'}
+                ? "✓ Las contraseñas coinciden"
+                : "✗ Las contraseñas no coinciden"}
             </p>
           )}
-          {errors.confirm && <p style={fieldErrorText}>{errors.confirm}</p>}
+          {errors.confirm && <p className={errorTextClass}>{errors.confirm}</p>}
         </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          style={loading ? btnPrimaryDisabled : btnPrimary}
-          onMouseEnter={e => {
-            if (!loading) (e.target as HTMLButtonElement).style.backgroundColor = '#1D4ED8'
-          }}
-          onMouseLeave={e => {
-            if (!loading) (e.target as HTMLButtonElement).style.backgroundColor = '#2563EB'
-          }}
-        >
-          {loading ? 'Guardando...' : 'Guardar nueva contraseña'}
+        <button type="submit" disabled={loading} className={primaryButtonClass}>
+          {loading ? "Guardando..." : "Guardar nueva contraseña"}
         </button>
       </form>
     </>
-  )
+  );
 }
 
-// ─── PASO 4: Éxito ────────────────────────────────────────────────────────────
+// ─── Step 4 ───────────────────────────────────────────────────────────────────
 function StepDone() {
   return (
-    <>
-      <div style={{ textAlign: 'center' }}>
-        <div style={{ ...S.successCircle, margin: '0 auto 24px' }}>
-          <CheckIcon size={28} />
-        </div>
-
-        <h1 style={{ ...S.cardTitle, textAlign: 'center' }}>¡Contraseña actualizada!</h1>
-        <p style={{ ...S.cardSubtitle, textAlign: 'center' }}>
-          Tu contraseña fue cambiada exitosamente. Ya puedes iniciar sesión con tu nueva contraseña.
-        </p>
-
-        <a
-          href="/login"
-          style={{
-            ...btnPrimary,
-            display: 'flex',
-            textDecoration: 'none',
-            justifyContent: 'center',
-          }}
-          onMouseEnter={e =>
-            ((e.currentTarget as HTMLAnchorElement).style.backgroundColor = '#1D4ED8')
-          }
-          onMouseLeave={e =>
-            ((e.currentTarget as HTMLAnchorElement).style.backgroundColor = '#2563EB')
-          }
-        >
-          Ir al inicio de sesión
-        </a>
+    <div className="text-center">
+      <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-full border-2 border-green-200 bg-green-100 text-green-600">
+        <CheckIcon size={28} className="text-green-600" />
       </div>
-    </>
-  )
+      <h1 className="mb-2 text-[24px] font-bold tracking-[-0.4px] text-slate-900">
+        ¡Contraseña actualizada!
+      </h1>
+      <p className="mb-6 text-[15px] text-slate-600">
+        Tu contraseña fue cambiada exitosamente. Ya puedes iniciar sesión con tu nueva contraseña.
+      </p>
+      <a href="/login" className={`${primaryButtonClass} inline-flex justify-center no-underline`}>
+        Ir al inicio de sesión
+      </a>
+    </div>
+  );
 }
 
-// ─── Componente principal ─────────────────────────────────────────────────────
+// ─── Página principal ─────────────────────────────────────────────────────────
 export default function ForgotPasswordPage() {
-  const [step, setStep] = useState<Step>('email')
-  const [email, setEmail] = useState('')
+  const { step, email, goToConfirmation, goToNewPassword, goToDone } = useForgotPassword();
 
   return (
-    <div style={S.root}>
-      {/* Header */}
-      <header style={S.header}>
-        <div style={S.headerLogoBox}>
+    <div className="min-h-screen bg-slate-50 flex flex-col">
+      <header className="flex items-center gap-3 border-b border-slate-200 bg-white px-8 py-4">
+        <div className="flex h-9 w-9 items-center justify-center rounded-[9px] bg-blue-600">
           <BookIcon />
         </div>
-        <span style={S.headerLogoText}>NovaLibros</span>
+        <span className="text-[20px] font-bold text-slate-900">NovaLibros</span>
       </header>
 
-      {/* Main */}
-      <main style={S.main}>
-        <div style={S.card}>
-          {step === 'email' && (
-            <StepEmail
-              onNext={e => {
-                setEmail(e)
-                setStep('confirmation')
-              }}
-            />
-          )}
-          {step === 'confirmation' && (
-            <StepConfirmation email={email} onNext={() => setStep('new-password')} />
-          )}
-          {step === 'new-password' && <StepNewPassword onDone={() => setStep('done')} />}
-          {step === 'done' && <StepDone />}
+      <main className="flex flex-1 items-center justify-center px-6 py-12">
+        <div className="w-full max-w-[440px] rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+          {step === "email" && <StepEmail onNext={goToConfirmation} />}
+          {step === "confirmation" && <StepConfirmation email={email} onNext={goToNewPassword} />}
+          {step === "new-password" && <StepNewPassword onDone={goToDone} />}
+          {step === "done" && <StepDone />}
         </div>
       </main>
-
-      <style>{globalStyles}</style>
     </div>
-  )
+  );
 }

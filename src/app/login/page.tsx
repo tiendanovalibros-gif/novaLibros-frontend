@@ -1,27 +1,9 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { useAuth } from '@/context/auth.context'
-import * as S from '@/styles/login.styles'
-import {
-  btnPrimary,
-  btnPrimaryDisabled,
-  alertError,
-  alertErrorText,
-  dividerRow,
-  dividerLine,
-  dividerText,
-  label,
-  field,
-  getInputStyle,
-  inputFocusOn,
-  inputFocusOff,
-  globalStyles,
-  logoBox,
-  logoRow,
-  logoText,
-} from '@/styles/auth.styles'
+import { useLogin } from "@/hooks/useLogin";
+import Iconify from "@/components/iconify/iconify";
+import LayoutCard from "@/layouts/auth/authCard";
+import { Alert } from "@mui/material";
 
 const BookIcon = () => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
@@ -40,191 +22,91 @@ const BookIcon = () => (
       strokeLinejoin="round"
     />
   </svg>
-)
-
-const EyeIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-    <path
-      d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-    />
-    <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" />
-  </svg>
-)
-
-const EyeOffIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-    <path
-      d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-    />
-    <path
-      d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-    />
-    <line
-      x1="1"
-      y1="1"
-      x2="23"
-      y2="23"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-    />
-  </svg>
-)
-
-const ErrorIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-    <circle cx="12" cy="12" r="10" stroke="#991B1B" strokeWidth="2" />
-    <line x1="12" y1="8" x2="12" y2="12" stroke="#991B1B" strokeWidth="2" strokeLinecap="round" />
-    <line
-      x1="12"
-      y1="16"
-      x2="12.01"
-      y2="16"
-      stroke="#991B1B"
-      strokeWidth="2"
-      strokeLinecap="round"
-    />
-  </svg>
-)
-
-const STATS = [
-  { num: '+5.000', label: 'Títulos' },
-  { num: '+800', label: 'Autores' },
-  { num: '24h', label: 'Reservas' },
-]
+);
 
 export default function LoginPage() {
-  const router = useRouter()
-  const { login } = useAuth()
-
-  const [showPassword, setShowPassword] = useState(false)
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-
-    if (!email || !password) {
-      setError('Por favor completa todos los campos.')
-      return
-    }
-
-    setLoading(true)
-    try {
-      const user = await login({ correo: email, contrasena: password })
-        if (user.rol === 'root') {
-          router.push('/root')
-        } else {
-          router.push('/')
-        }
-    } catch (err) {
-      console.error('Login error', err)
-      setError('Credenciales incorrectas o el servidor no está disponible.')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const {
+    email,
+    setEmail,
+    password,
+    setPassword,
+    error,
+    loading,
+    showPassword,
+    setShowPassword,
+    handleSubmit,
+  } = useLogin();
 
   return (
-    <div style={{ ...S.root, fontFamily: "'DM Sans', 'Segoe UI', sans-serif" }}>
-      {/* Panel izquierdo */}
-      <div style={S.leftPanel} className="login-left-panel">
-        <div style={S.circleTopRight} />
-        <div style={S.circleBottomLeft} />
-        <div style={S.circleBottomRight} />
+    <div className="min-h-screen bg-slate-50 md:flex">
+      <LayoutCard
+        title="Descubre tu próxima"
+        description="Accede a miles de títulos, gestiona tus reservas y compras, todo desde un solo lugar."
+        highlight="gran lectura"
+        eyebrow="Tu librería en línea"
+        logo={<BookIcon />}
+      />
 
-        <div style={{ ...logoRow, position: 'relative', zIndex: 1 }}>
-          <div style={logoBox}>
-            <BookIcon />
+      <div className="flex w-full flex-1 items-center justify-center px-8 py-12">
+        <div className="w-full max-w-[400px] rounded-2xl bg-white p-8 shadow-lg">
+          <div className="text-center">
+            <h1 className="mb-2 text-[28px] font-bold tracking-[-0.4px] text-slate-900">
+              NovaLibros
+            </h1>
+            <p className="mb-9 text-[15px] text-slate-600">
+              Bienvenido de nuevo a tu librería en línea
+            </p>
           </div>
-          <span style={logoText}>NovaLibros</span>
-        </div>
 
-        <div style={S.leftContent}>
-          <p style={S.leftEyebrow}>Tu librería en línea</p>
-          <h2 style={S.leftHeading}>
-            Descubre tu próxima
-            <br />
-            <span style={S.leftHeadingAccent}>gran lectura</span>
-          </h2>
-          <p style={S.leftBody}>
-            Accede a miles de títulos, gestiona tus reservas y compras, todo desde un solo lugar.
-          </p>
-        </div>
-
-        <div style={S.statsRow}>
-          {STATS.map(stat => (
-            <div key={stat.label}>
-              <div style={S.statNumber}>{stat.num}</div>
-              <div style={S.statLabel}>{stat.label}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Panel derecho */}
-      <div style={S.rightPanel}>
-        <div style={S.formWrapper}>
-          <h1 style={S.heading}>Bienvenido de vuelta</h1>
-          <p style={S.subheading}>Ingresa tus credenciales para continuar</p>
-
-          {error && (
-            <div style={alertError}>
-              <ErrorIcon />
-              <span style={alertErrorText}>{error}</span>
+          {!!error && (
+            <div className="flex items-center rounded-lg border mb-2">
+              <Alert className="w-full" severity="error">
+                {error}
+              </Alert>
             </div>
           )}
 
           <form onSubmit={handleSubmit}>
-            <div style={field}>
-              <label style={label}>Correo electrónico</label>
+            <div className="mb-[18px]">
+              <label className="mb-[7px] block text-[14px] font-semibold text-slate-900">
+                Correo electrónico
+              </label>
               <input
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder="tucorreo@ejemplo.com"
-                style={getInputStyle(false)}
-                onFocus={e => inputFocusOn(e, false)}
-                onBlur={e => inputFocusOff(e, false)}
+                className="w-full rounded-lg border border-slate-300 bg-white px-[14px] py-[11px] text-[15px] text-slate-900 outline-none transition-colors focus:border-blue-600"
               />
             </div>
 
-            <div style={field}>
-              <label style={label}>Contraseña</label>
-              <div style={{ position: 'relative' }}>
+            <div className="mb-[18px]">
+              <label className="mb-[7px] block text-[14px] font-semibold text-slate-900">
+                Contraseña
+              </label>
+              <div className="relative">
                 <input
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  style={{ ...getInputStyle(false), paddingRight: '44px' }}
-                  onFocus={e => inputFocusOn(e, false)}
-                  onBlur={e => inputFocusOff(e, false)}
+                  className="w-full rounded-lg border border-slate-300 bg-white px-[14px] py-[11px] pr-11 text-[15px] text-slate-900 outline-none transition-colors focus:border-blue-600"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  style={S.togglePasswordBtn}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-500"
                 >
-                  {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                  <Iconify icon={showPassword ? "solar:eye-bold" : "solar:eye-closed-bold"} />
                 </button>
               </div>
             </div>
 
-            <div style={S.forgotRow}>
-              <a href="/forgot-password" style={S.forgotLink}>
+            <div className="mb-7 text-right">
+              <a
+                href="/forgot-password"
+                className="text-[14px] font-medium text-blue-600 hover:text-blue-700"
+              >
                 ¿Olvidaste tu contraseña?
               </a>
             </div>
@@ -232,34 +114,26 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              style={loading ? btnPrimaryDisabled : btnPrimary}
-              onMouseEnter={e => {
-                if (!loading) (e.target as HTMLButtonElement).style.backgroundColor = '#1D4ED8'
-              }}
-              onMouseLeave={e => {
-                if (!loading) (e.target as HTMLButtonElement).style.backgroundColor = '#2563EB'
-              }}
+              className="w-full rounded-lg bg-blue-600 py-3 text-[15px] font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
             >
-              {loading ? 'Ingresando...' : 'Iniciar sesión'}
+              {loading ? "Ingresando..." : "Iniciar sesión"}
             </button>
           </form>
 
-          <div style={dividerRow}>
-            <div style={dividerLine} />
-            <span style={dividerText}>o</span>
-            <div style={dividerLine} />
+          <div className="my-7 flex items-center gap-4">
+            <div className="h-px flex-1 bg-slate-200" />
+            <span className="text-[13px] text-slate-400">o</span>
+            <div className="h-px flex-1 bg-slate-200" />
           </div>
 
-          <p style={S.bottomText}>
-            ¿No tienes cuenta?{' '}
-            <a href="/register" style={S.bottomLink}>
+          <p className="text-center text-[14px] text-slate-600">
+            ¿No tienes cuenta?{" "}
+            <a href="/register" className="font-semibold text-blue-600 hover:text-blue-700">
               Regístrate gratis
             </a>
           </p>
         </div>
       </div>
-
-      <style>{globalStyles + S.responsiveStyles}</style>
     </div>
-  )
+  );
 }

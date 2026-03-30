@@ -1,26 +1,15 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import * as S from '@/styles/register.styles'
-import {
-  btnPrimary,
-  btnPrimaryDisabled,
-  btnSecondary,
-  alertError,
-  alertErrorText,
-  label,
-  field,
-  getInputStyle,
-  inputFocusOn,
-  inputFocusOff,
-  fieldErrorText,
-  globalStyles,
-} from '@/styles/auth.styles'
+import { useRegister } from "@/hooks/useRegister";
+import { STEPS, GENEROS_LITERARIOS } from "@/constants/register.constants";
+import type { RegisterFormData } from "@/types/register.types";
+import Iconify from "@/components/iconify/iconify";
+import LayoutCard from "@/layouts/auth/authCard";
+import { Alert } from "@mui/material";
 
-// ─── Iconos ───────────────────────────────────────────────────────────────────
-const BookIcon = ({ size = 20 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+// ─── Iconos ──────────────────────────────────────────────────────────────────
+const BookIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
     <path
       d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"
       stroke="white"
@@ -36,7 +25,7 @@ const BookIcon = ({ size = 20 }: { size?: number }) => (
       strokeLinejoin="round"
     />
   </svg>
-)
+);
 
 const CheckIcon = () => (
   <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
@@ -48,446 +37,220 @@ const CheckIcon = () => (
       strokeLinejoin="round"
     />
   </svg>
-)
+);
 
-const EyeIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-    <path
-      d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-    />
-    <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" />
-  </svg>
-)
+// ─── Clases reutilizables ─────────────────────────────────────────────────────
+const inputClass = (hasError: boolean) =>
+  `w-full rounded-lg border bg-white px-[14px] py-[11px] text-[15px] text-slate-900 outline-none transition-colors focus:border-blue-600 ${hasError ? "border-red-500 bg-red-100" : "border-slate-300"}`;
 
-const EyeOffIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-    <path
-      d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-    />
-    <path
-      d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-    />
-    <line
-      x1="1"
-      y1="1"
-      x2="23"
-      y2="23"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-    />
-  </svg>
-)
+const primaryBtnClass =
+  "rounded-lg bg-blue-600 text-[15px] font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300";
+const secondaryBtnClass =
+  "rounded-lg bg-slate-200 px-6 py-2.5 text-[15px] font-semibold text-slate-900 transition-colors hover:bg-slate-300";
+const errorTextClass = "mt-1.5 text-[12px] text-red-800";
+const fieldClass = "mb-[18px]";
 
-const ErrorIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-    <circle cx="12" cy="12" r="10" stroke="#991B1B" strokeWidth="2" />
-    <line x1="12" y1="8" x2="12" y2="12" stroke="#991B1B" strokeWidth="2" strokeLinecap="round" />
-    <line
-      x1="12"
-      y1="16"
-      x2="12.01"
-      y2="16"
-      stroke="#991B1B"
-      strokeWidth="2"
-      strokeLinecap="round"
-    />
-  </svg>
-)
+const strengthColor = (len: number) => {
+  if (len < 6) return "bg-red-500";
+  if (len < 10) return "bg-yellow-400";
+  return "bg-green-500";
+};
 
-// ─── Constantes ───────────────────────────────────────────────────────────────
-const GENEROS_LITERARIOS = [
-  'Ficción',
-  'No ficción',
-  'Ciencia ficción',
-  'Fantasy',
-  'Romance',
-  'Thriller',
-  'Terror',
-  'Historia',
-  'Biografía',
-  'Autoayuda',
-  'Ciencia',
-  'Filosofía',
-  'Poesía',
-  'Infantil',
-  'Juvenil',
-]
-
-const STEPS = [
-  { num: 1, label: 'Datos personales' },
-  { num: 2, label: 'Cuenta' },
-  { num: 3, label: 'Preferencias' },
-]
-
-// ─── Tipos ────────────────────────────────────────────────────────────────────
-type Step = 1 | 2 | 3
-
-interface FormData {
-  nombre: string
-  apellido: string
-  dni: string
-  fechaNacimiento: string
-  lugarNacimiento: string
-  genero: string
-  correo: string
-  usuario: string
-  contrasena: string
-  confirmarContrasena: string
-  direccion: string
-  telefono: string
-  preferencias: string[]
-  aceptaTerminos: boolean
-  aceptaDatos: boolean
+// ─── Checkbox ─────────────────────────────────────────────────────────────────
+interface CheckboxProps {
+  field: "aceptaTerminos" | "aceptaDatos";
+  label: string;
+  checked: boolean;
+  error?: string;
+  onChange: (field: keyof RegisterFormData, value: boolean) => void;
 }
 
-type FormErrors = Partial<Record<keyof FormData | 'general', string>>
-
-const INITIAL_FORM: FormData = {
-  nombre: '',
-  apellido: '',
-  dni: '',
-  fechaNacimiento: '',
-  lugarNacimiento: '',
-  genero: '',
-  correo: '',
-  usuario: '',
-  contrasena: '',
-  confirmarContrasena: '',
-  direccion: '',
-  telefono: '',
-  preferencias: [],
-  aceptaTerminos: false,
-  aceptaDatos: false,
-}
-
-// ─── Componente ───────────────────────────────────────────────────────────────
-export default function RegisterPage() {
-  const [step, setStep] = useState<Step>(1)
-  const [loading, setLoading] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
-  const [errors, setErrors] = useState<FormErrors>({})
-  const [form, setForm] = useState<FormData>(INITIAL_FORM)
-  const router = useRouter()
-
-  const set = (field: keyof FormData, value: string | boolean | string[]) => {
-    setForm(prev => ({ ...prev, [field]: value }))
-    setErrors(prev => ({ ...prev, [field]: '' }))
-  }
-
-  const togglePreferencia = (pref: string) => {
-    const next = form.preferencias.includes(pref)
-      ? form.preferencias.filter(p => p !== pref)
-      : [...form.preferencias, pref]
-    set('preferencias', next)
-  }
-
-  // ── Validaciones por step ──
-  const validateStep1 = (): boolean => {
-    const e: FormErrors = {}
-    const nombre = form.nombre.trim()
-    if (!nombre) e.nombre = 'Campo requerido'
-    else if (nombre.length > 40) e.nombre = 'Máximo 40 caracteres'
-    else if (/\d/.test(nombre)) e.nombre = 'El nombre no puede contener números'
-
-    const apellido = form.apellido.trim()
-    if (!apellido) e.apellido = 'Campo requerido'
-    else if (apellido.length > 40) e.apellido = 'Máximo 40 caracteres'
-    else if (/\d/.test(apellido)) e.apellido = 'El apellido no puede contener números'
-
-    const dni = form.dni.trim()
-    if (!dni) e.dni = 'Campo requerido'
-    else if (!/^\d{1,15}$/.test(dni)) e.dni = 'El DNI debe tener solo números (máximo 15 dígitos)'
-    else if (BigInt(dni) <= 0n) e.dni = 'El DNI debe ser un número positivo'
-
-    if (!form.fechaNacimiento) {
-      e.fechaNacimiento = 'Campo requerido'
-    } else {
-      const nacimiento = new Date(`${form.fechaNacimiento}T00:00:00`)
-      const hoy = new Date()
-      hoy.setHours(0, 0, 0, 0)
-
-      if (Number.isNaN(nacimiento.getTime())) {
-        e.fechaNacimiento = 'Fecha inválida'
-      } else if (nacimiento >= hoy) {
-        e.fechaNacimiento = 'La fecha debe ser menor a la actual'
-      } else {
-        const fechaMinima = new Date(hoy.getFullYear() - 10, hoy.getMonth(), hoy.getDate())
-        if (nacimiento > fechaMinima) e.fechaNacimiento = 'Debes tener al menos 10 años'
-      }
-    }
-
-    const lugarNacimiento = form.lugarNacimiento.trim()
-    if (!lugarNacimiento) e.lugarNacimiento = 'Campo requerido'
-    else if (lugarNacimiento.length > 50) e.lugarNacimiento = 'Máximo 50 caracteres'
-    else if (/\d/.test(lugarNacimiento))
-      e.lugarNacimiento = 'El lugar de nacimiento no puede contener números'
-
-    if (!form.genero) e.genero = 'Selecciona un género'
-    setErrors(e)
-    return Object.keys(e).length === 0
-  }
-
-  const validateStep2 = (): boolean => {
-    const e: FormErrors = {}
-    if (!form.correo.trim() || !/\S+@\S+\.\S+/.test(form.correo)) e.correo = 'Correo inválido'
-    if (!form.usuario.trim()) e.usuario = 'Campo requerido'
-    if (form.contrasena.length < 8) e.contrasena = 'Mínimo 8 caracteres'
-    if (form.contrasena !== form.confirmarContrasena)
-      e.confirmarContrasena = 'Las contraseñas no coinciden'
-    if (!form.direccion.trim()) e.direccion = 'Campo requerido'
-    if (form.direccion.length > 100) e.direccion = 'Máximo 100 caracteres'
-    if (!/^\+\d{12}$/.test(form.telefono))
-      e.telefono = 'El teléfono debe tener el formato +570000000000'
-    setErrors(e)
-    return Object.keys(e).length === 0
-  }
-
-  const validateStep3 = (): boolean => {
-    const e: FormErrors = {}
-    if (form.preferencias.length === 0) e.general = 'Selecciona al menos una preferencia'
-    if (!form.aceptaTerminos) e.aceptaTerminos = 'Debes aceptar los términos y condiciones'
-    if (!form.aceptaDatos) e.aceptaDatos = 'Debes aceptar la política de datos'
-    setErrors(e)
-    return Object.keys(e).length === 0
-  }
-
-  const nextStep = () => {
-    if (step === 1 && validateStep1()) setStep(2)
-    if (step === 2 && validateStep2()) setStep(3)
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setErrors({})
-    if (!validateStep3()) return
-    setLoading(true)
-
-    const API_URL = process.env.NEXT_PUBLIC_API_URL
-
-    try {
-      const res = await fetch(`${API_URL}/users/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          dni: form.dni,
-          nombre: form.nombre,
-          apellido: form.apellido,
-          fechaNacimiento: form.fechaNacimiento,
-          correo: form.correo,
-          contrasenaHash: form.contrasena,
-          direccion: form.direccion || undefined,
-          telefono: form.telefono || undefined,
-          rol: 'cliente',
-          estadoCuenta: true,
-        }),
-      })
-      if (!res.ok) {
-        let message = 'Error al registrar usuario'
-        try {
-          const data = await res.json()
-          if (data && typeof data.message === 'string') {
-            message = data.message
-          }
-        } catch {
-          //ignorar error
-        }
-        throw new Error(message)
-      }
-      const data = await res.json()
-      console.log('Register exitoso:', data)
-      router.push('/login')
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Error al iniciar sesión'
-      console.error(message) // Log the error instead
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const err = (f: keyof FormData) => (errors[f] ? <p style={fieldErrorText}>{errors[f]}</p> : null)
-
-  // ── Sub-componente: Checkbox ──
-  const Checkbox = ({
-    field: f,
-    label: lbl,
-  }: {
-    field: 'aceptaTerminos' | 'aceptaDatos'
-    label: string
-  }) => {
-    const checked = form[f] as boolean
-    const boxStyle = errors[f] ? S.checkboxError : checked ? S.checkboxActive : S.checkboxInactive
-    return (
-      <div>
-        <label
-          style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', cursor: 'pointer' }}
-        >
-          <div onClick={() => set(f, !checked)} style={boxStyle}>
-            {checked && <CheckIcon />}
-          </div>
-          <span style={S.checkboxLabel}>{lbl}</span>
-        </label>
-        {errors[f] && <p style={{ ...fieldErrorText, marginLeft: '30px' }}>{errors[f]}</p>}
-      </div>
-    )
-  }
+const Checkbox = ({ field, label, checked, error, onChange }: CheckboxProps) => {
+  const boxClass = error
+    ? "border-red-500 bg-white"
+    : checked
+      ? "border-blue-600 bg-blue-600"
+      : "border-slate-300 bg-white";
 
   return (
-    <div style={{ ...S.root, fontFamily: "'DM Sans', 'Segoe UI', sans-serif" }}>
-      {/* ── Header ── */}
-      <header style={S.header}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={S.headerLogoBox}>
-            <BookIcon />
-          </div>
-          <span style={S.headerLogoText}>NovaLibros</span>
+    <div>
+      <label className="flex cursor-pointer items-start gap-3">
+        <div
+          role="checkbox"
+          aria-checked={checked}
+          tabIndex={0}
+          onClick={() => onChange(field, !checked)}
+          onKeyDown={e => e.key === " " && onChange(field, !checked)}
+          className={`mt-[1px] flex h-[18px] w-[18px] min-w-[18px] items-center justify-center rounded-[4px] border-2 ${boxClass}`}
+        >
+          {checked && <CheckIcon />}
         </div>
-        <p style={S.headerLink}>
-          ¿Ya tienes cuenta?{' '}
-          <a href="/login" style={S.headerLoginLink}>
-            Inicia sesión
-          </a>
-        </p>
-      </header>
+        <span className="text-[14px] leading-[1.5] text-slate-600">{label}</span>
+      </label>
+      {error && <p className={`${errorTextClass} ml-[30px]`}>{error}</p>}
+    </div>
+  );
+};
 
-      {/* ── Main ── */}
-      <main style={S.main}>
-        <div style={S.mainInner}>
-          {/* Título */}
-          <div style={S.titleWrapper}>
-            <h1 style={S.pageTitle}>Crea tu cuenta</h1>
-            <p style={S.pageSubtitle}>Completa el formulario para acceder a todos los beneficios</p>
+// ─── Página ───────────────────────────────────────────────────────────────────
+export default function RegisterPage() {
+  const {
+    step,
+    nextStep,
+    prevStep,
+    form,
+    set,
+    togglePreferencia,
+    errors,
+    loading,
+    showPassword,
+    setShowPassword,
+    handleSubmit,
+  } = useRegister();
+
+  const err = (f: keyof RegisterFormData) =>
+    errors[f] ? <p className={errorTextClass}>{errors[f]}</p> : null;
+
+  return (
+    <div className="min-h-screen bg-slate-50 md:flex relative z-10 flex gap-8">
+      <LayoutCard
+        title="Descubre tu próxima"
+        description="Accede a miles de títulos, gestiona tus reservas y compras, todo desde un solo lugar."
+        highlight="gran lectura"
+        eyebrow="Tu librería en línea"
+        logo={<BookIcon />}
+      />
+
+      <div className="flex w-full flex-1 items-center justify-center px-8 py-12">
+        <div className="w-full max-w-[560px] rounded-2xl bg-white p-8 shadow-lg">
+          <div className="mb-6 text-left text-[14px] text-slate-600">
+            ¿Ya tienes cuenta?{" "}
+            <a href="/login" className="font-semibold text-blue-600 hover:text-blue-700">
+              Inicia sesion
+            </a>
+          </div>
+
+          <div className="mb-8 text-center">
+            <h1 className="text-[26px] font-bold tracking-[-0.4px] text-slate-900">
+              Crea tu cuenta
+            </h1>
+            <p className="text-[15px] text-slate-600">
+              Completa el formulario para acceder a todos los beneficios
+            </p>
           </div>
 
           {/* Stepper */}
-          <div style={S.stepperRow}>
+          <div className="mb-9 flex items-center justify-center">
             {STEPS.map((s, i) => {
-              const done = step > s.num
-              const active = step === s.num
+              const done = step > s.num;
+              const active = step === s.num;
               return (
-                <div key={s.num} style={{ display: 'flex', alignItems: 'center' }}>
-                  <div
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: '6px',
-                    }}
-                  >
-                    <div style={active || done ? S.stepCircleActive : S.stepCircleInactive}>
+                <div key={s.num} className="flex items-center">
+                  <div className="flex flex-col items-center gap-1.5">
+                    <div
+                      className={`flex h-9 w-9 items-center justify-center rounded-full transition-all ${active || done ? "bg-blue-600" : "bg-slate-200"}`}
+                    >
                       {done ? (
                         <CheckIcon />
                       ) : (
                         <span
-                          style={{
-                            color: active ? '#FFF' : '#94A3B8',
-                            fontSize: '14px',
-                            fontWeight: 700,
-                          }}
+                          className={`${active ? "text-white" : "text-slate-400"} text-[14px] font-bold`}
                         >
                           {s.num}
                         </span>
                       )}
                     </div>
-                    <span style={active ? S.stepLabelActive : S.stepLabelInactive}>{s.label}</span>
+                    <span
+                      className={`whitespace-nowrap text-[12px] ${active ? "font-semibold text-slate-900" : "font-normal text-slate-400"}`}
+                    >
+                      {s.label}
+                    </span>
                   </div>
                   {i < STEPS.length - 1 && (
-                    <div style={done ? S.stepConnectorActive : S.stepConnectorInactive} />
+                    <div
+                      className={`mx-2 mb-[22px] h-0.5 w-20 transition-colors ${done ? "bg-blue-600" : "bg-slate-200"}`}
+                    />
                   )}
                 </div>
-              )
+              );
             })}
           </div>
 
-          {/* Card */}
-          <div style={S.card}>
-            {/* Error general */}
+          <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
             {errors.general && (
-              <div style={alertError}>
-                <ErrorIcon />
-                <span style={alertErrorText}>{errors.general}</span>
+              <div className="flex items-center rounded-lg border mb-2">
+                <Alert className="w-full" severity="error">
+                  {errors.general}
+                </Alert>
               </div>
             )}
 
-            {/* ── STEP 1: Datos personales ── */}
+            {/* Step 1 */}
             {step === 1 && (
               <>
-                <h2 style={S.cardTitle}>Información personal</h2>
-                <div style={S.gridTwoCols}>
-                  <div style={field}>
-                    <label style={label}>Nombre(s)</label>
+                <h2 className="mb-6 text-[18px] font-bold text-slate-900">Informacion personal</h2>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-x-4 md:gap-y-0">
+                  <div className={fieldClass}>
+                    <label className="mb-[7px] block text-[14px] font-semibold text-slate-900">
+                      Nombre(s)
+                    </label>
                     <input
                       type="text"
                       value={form.nombre}
-                      onChange={e => set('nombre', e.target.value)}
+                      onChange={e => set("nombre", e.target.value)}
                       placeholder="Juan"
-                      style={getInputStyle(!!errors.nombre)}
-                      onFocus={e => inputFocusOn(e, !!errors.nombre)}
-                      onBlur={e => inputFocusOff(e, !!errors.nombre)}
+                      className={inputClass(!!errors.nombre)}
                     />
-                    {err('nombre')}
+                    {err("nombre")}
                   </div>
-                  <div style={field}>
-                    <label style={label}>Apellido(s)</label>
+                  <div className={fieldClass}>
+                    <label className="mb-[7px] block text-[14px] font-semibold text-slate-900">
+                      Apellido(s)
+                    </label>
                     <input
                       type="text"
                       value={form.apellido}
-                      onChange={e => set('apellido', e.target.value)}
-                      placeholder="García"
-                      style={getInputStyle(!!errors.apellido)}
-                      onFocus={e => inputFocusOn(e, !!errors.apellido)}
-                      onBlur={e => inputFocusOff(e, !!errors.apellido)}
+                      onChange={e => set("apellido", e.target.value)}
+                      placeholder="Garcia"
+                      className={inputClass(!!errors.apellido)}
                     />
-                    {err('apellido')}
+                    {err("apellido")}
                   </div>
                 </div>
-
-                <div style={field}>
-                  <label style={label}>DNI / Documento de identidad</label>
+                <div className={fieldClass}>
+                  <label className="mb-[7px] block text-[14px] font-semibold text-slate-900">
+                    DNI / Documento de identidad
+                  </label>
                   <input
                     type="text"
                     value={form.dni}
-                    onChange={e => set('dni', e.target.value)}
+                    onChange={e => set("dni", e.target.value)}
                     placeholder="1234567890"
-                    style={getInputStyle(!!errors.dni)}
-                    onFocus={e => inputFocusOn(e, !!errors.dni)}
-                    onBlur={e => inputFocusOff(e, !!errors.dni)}
+                    className={inputClass(!!errors.dni)}
                   />
-                  {err('dni')}
+                  {err("dni")}
                 </div>
-
-                <div style={S.gridTwoCols}>
-                  <div style={field}>
-                    <label style={label}>Fecha de nacimiento</label>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-x-4 md:gap-y-0">
+                  <div className={fieldClass}>
+                    <label className="mb-[7px] block text-[14px] font-semibold text-slate-900">
+                      Fecha de nacimiento
+                    </label>
                     <input
                       type="date"
                       value={form.fechaNacimiento}
-                      onChange={e => set('fechaNacimiento', e.target.value)}
-                      style={getInputStyle(!!errors.fechaNacimiento)}
-                      onFocus={e => inputFocusOn(e, !!errors.fechaNacimiento)}
-                      onBlur={e => inputFocusOff(e, !!errors.fechaNacimiento)}
+                      onChange={e => set("fechaNacimiento", e.target.value)}
+                      className={inputClass(!!errors.fechaNacimiento)}
                     />
-                    {err('fechaNacimiento')}
+                    {err("fechaNacimiento")}
                   </div>
-                  <div style={field}>
-                    <label style={label}>Género</label>
+                  <div className={fieldClass}>
+                    <label className="mb-[7px] block text-[14px] font-semibold text-slate-900">
+                      Genero
+                    </label>
                     <select
                       value={form.genero}
-                      onChange={e => set('genero', e.target.value)}
-                      style={{ ...getInputStyle(!!errors.genero), cursor: 'pointer' }}
-                      onFocus={e => inputFocusOn(e, !!errors.genero)}
-                      onBlur={e => inputFocusOff(e, !!errors.genero)}
+                      onChange={e => set("genero", e.target.value)}
+                      className={`${inputClass(!!errors.genero)} cursor-pointer`}
                     >
                       <option value="">Seleccionar...</option>
                       <option value="masculino">Masculino</option>
@@ -495,237 +258,192 @@ export default function RegisterPage() {
                       <option value="otro">Otro</option>
                       <option value="prefiero_no_decir">Prefiero no decir</option>
                     </select>
-                    {err('genero')}
+                    {err("genero")}
                   </div>
                 </div>
-
-                <div style={field}>
-                  <label style={label}>Lugar de nacimiento</label>
+                <div className={fieldClass}>
+                  <label className="mb-[7px] block text-[14px] font-semibold text-slate-900">
+                    Lugar de nacimiento
+                  </label>
                   <input
                     type="text"
                     value={form.lugarNacimiento}
-                    onChange={e => set('lugarNacimiento', e.target.value)}
+                    onChange={e => set("lugarNacimiento", e.target.value)}
                     placeholder="Pereira, Colombia"
-                    style={getInputStyle(!!errors.lugarNacimiento)}
-                    onFocus={e => inputFocusOn(e, !!errors.lugarNacimiento)}
-                    onBlur={e => inputFocusOff(e, !!errors.lugarNacimiento)}
+                    className={inputClass(!!errors.lugarNacimiento)}
                   />
-                  {err('lugarNacimiento')}
+                  {err("lugarNacimiento")}
                 </div>
               </>
             )}
 
-            {/* ── STEP 2: Cuenta ── */}
+            {/* Step 2 */}
             {step === 2 && (
               <>
-                <h2 style={S.cardTitle}>Datos de acceso y contacto</h2>
-
-                <div style={field}>
-                  <label style={label}>Correo electrónico</label>
+                <h2 className="mb-6 text-[18px] font-bold text-slate-900">
+                  Datos de acceso y contacto
+                </h2>
+                <div className={fieldClass}>
+                  <label className="mb-[7px] block text-[14px] font-semibold text-slate-900">
+                    Correo electronico
+                  </label>
                   <input
                     type="email"
                     value={form.correo}
-                    onChange={e => set('correo', e.target.value)}
+                    onChange={e => set("correo", e.target.value)}
                     placeholder="tucorreo@ejemplo.com"
-                    style={getInputStyle(!!errors.correo)}
-                    onFocus={e => inputFocusOn(e, !!errors.correo)}
-                    onBlur={e => inputFocusOff(e, !!errors.correo)}
+                    className={inputClass(!!errors.correo)}
                   />
-                  {err('correo')}
+                  {err("correo")}
                 </div>
-
-                <div style={field}>
-                  <label style={label}>Nombre de usuario</label>
+                <div className={fieldClass}>
+                  <label className="mb-[7px] block text-[14px] font-semibold text-slate-900">
+                    Nombre de usuario
+                  </label>
                   <input
                     type="text"
                     value={form.usuario}
-                    onChange={e => set('usuario', e.target.value)}
+                    onChange={e => set("usuario", e.target.value)}
                     placeholder="juan_garcia"
-                    style={getInputStyle(!!errors.usuario)}
-                    onFocus={e => inputFocusOn(e, !!errors.usuario)}
-                    onBlur={e => inputFocusOff(e, !!errors.usuario)}
+                    className={inputClass(!!errors.usuario)}
                   />
-                  {err('usuario')}
+                  {err("usuario")}
                 </div>
-
-                <div style={field}>
-                  <label style={label}>Contraseña</label>
-                  <div style={{ position: 'relative' }}>
+                <div className={fieldClass}>
+                  <label className="mb-[7px] block text-[14px] font-semibold text-slate-900">
+                    Contrasena
+                  </label>
+                  <div className="relative">
                     <input
-                      type={showPassword ? 'text' : 'password'}
+                      type={showPassword ? "text" : "password"}
                       value={form.contrasena}
-                      onChange={e => set('contrasena', e.target.value)}
-                      placeholder="Mínimo 8 caracteres"
-                      style={{ ...getInputStyle(!!errors.contrasena), paddingRight: '44px' }}
-                      onFocus={e => inputFocusOn(e, !!errors.contrasena)}
-                      onBlur={e => inputFocusOff(e, !!errors.contrasena)}
+                      onChange={e => set("contrasena", e.target.value)}
+                      placeholder="Minimo 8 caracteres"
+                      className={`${inputClass(!!errors.contrasena)} pr-11`}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      style={{
-                        position: 'absolute',
-                        right: '12px',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        color: '#94A3B8',
-                        padding: '4px',
-                        display: 'flex',
-                        alignItems: 'center',
-                      }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-500"
                     >
-                      {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                      <Iconify icon={showPassword ? "solar:eye-bold" : "solar:eye-closed-bold"} />
                     </button>
                   </div>
-                  {/* Indicador de fuerza */}
                   {form.contrasena.length > 0 && (
-                    <div style={S.strengthRow}>
+                    <div className="mt-2 flex gap-1">
                       {[1, 2, 3, 4].map(i => (
                         <div
                           key={i}
-                          style={{
-                            flex: 1,
-                            height: '3px',
-                            borderRadius: '2px',
-                            transition: 'background-color 0.2s',
-                            backgroundColor:
-                              form.contrasena.length >= i * 2
-                                ? S.getStrengthBarColor(form.contrasena.length)
-                                : '#E2E8F0',
-                          }}
+                          className={`h-[3px] flex-1 rounded-[2px] transition-colors ${form.contrasena.length >= i * 2 ? strengthColor(form.contrasena.length) : "bg-slate-200"}`}
                         />
                       ))}
                     </div>
                   )}
-                  {err('contrasena')}
+                  {err("contrasena")}
                 </div>
-
-                <div style={field}>
-                  <label style={label}>Confirmar contraseña</label>
+                <div className={fieldClass}>
+                  <label className="mb-[7px] block text-[14px] font-semibold text-slate-900">
+                    Confirmar contrasena
+                  </label>
                   <input
                     type="password"
                     value={form.confirmarContrasena}
-                    onChange={e => set('confirmarContrasena', e.target.value)}
-                    placeholder="Repite tu contraseña"
-                    style={getInputStyle(!!errors.confirmarContrasena)}
-                    onFocus={e => inputFocusOn(e, !!errors.confirmarContrasena)}
-                    onBlur={e => inputFocusOff(e, !!errors.confirmarContrasena)}
+                    onChange={e => set("confirmarContrasena", e.target.value)}
+                    placeholder="Repite tu contrasena"
+                    className={inputClass(!!errors.confirmarContrasena)}
                   />
-                  {err('confirmarContrasena')}
+                  {err("confirmarContrasena")}
                 </div>
-
-                <div style={field}>
-                  <label style={label}>Dirección de correspondencia</label>
+                <div className={fieldClass}>
+                  <label className="mb-[7px] block text-[14px] font-semibold text-slate-900">
+                    Direccion de correspondencia
+                  </label>
                   <input
                     type="text"
                     value={form.direccion}
-                    onChange={e => set('direccion', e.target.value)}
+                    onChange={e => set("direccion", e.target.value)}
                     placeholder="Calle 15 #23-45, Pereira"
-                    style={getInputStyle(!!errors.direccion)}
-                    onFocus={e => inputFocusOn(e, !!errors.direccion)}
-                    onBlur={e => inputFocusOff(e, !!errors.direccion)}
+                    className={inputClass(!!errors.direccion)}
                   />
-                  {err('direccion')}
+                  {err("direccion")}
                 </div>
-
-                <div style={field}>
-                  <label style={label}>Teléfono</label>
+                <div className={fieldClass}>
+                  <label className="mb-[7px] block text-[14px] font-semibold text-slate-900">
+                    Telefono
+                  </label>
                   <input
                     type="tel"
                     value={form.telefono}
-                    onChange={e => set('telefono', e.target.value)}
+                    onChange={e => set("telefono", e.target.value)}
                     placeholder="+570000000000"
-                    style={getInputStyle(!!errors.telefono)}
-                    onFocus={e => inputFocusOn(e, !!errors.telefono)}
-                    onBlur={e => inputFocusOff(e, !!errors.telefono)}
+                    className={inputClass(!!errors.telefono)}
                   />
-                  {err('telefono')}
+                  {err("telefono")}
                 </div>
               </>
             )}
 
-            {/* ── STEP 3: Preferencias ── */}
+            {/* Step 3 */}
             {step === 3 && (
-              <form onSubmit={handleSubmit}>
-                <h2 style={S.cardTitle}>Preferencias literarias</h2>
-                <p style={S.cardSubtitle}>
-                  Selecciona los géneros que más te interesan para personalizar tus recomendaciones
+              <>
+                <h2 className="mb-6 text-[18px] font-bold text-slate-900">
+                  Preferencias literarias
+                </h2>
+                <p className="mb-5 text-[14px] text-slate-600">
+                  Selecciona los generos que mas te interesan para personalizar tus recomendaciones
                 </p>
-
-                <div style={S.chipsWrapper}>
-                  {GENEROS_LITERARIOS.map(pref => {
-                    const selected = form.preferencias.includes(pref)
-                    return (
-                      <button
-                        key={pref}
-                        type="button"
-                        onClick={() => togglePreferencia(pref)}
-                        style={selected ? S.chipSelected : S.chipDefault}
-                      >
-                        {pref}
-                      </button>
-                    )
-                  })}
+                <div className="mb-6 flex flex-wrap gap-2">
+                  {GENEROS_LITERARIOS.map(pref => (
+                    <button
+                      key={pref}
+                      type="button"
+                      onClick={() => togglePreferencia(pref)}
+                      className={`rounded-full border px-3.5 py-[7px] text-[13px] font-semibold transition-colors ${form.preferencias.includes(pref) ? "border-blue-600 bg-blue-100 text-blue-900" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"}`}
+                    >
+                      {pref}
+                    </button>
+                  ))}
                 </div>
-
-                <div style={S.legalBox}>
+                <div className="mb-6 flex flex-col gap-3.5 rounded-[10px] border border-slate-200 bg-slate-50 p-5">
                   <Checkbox
                     field="aceptaTerminos"
-                    label="Acepto los términos y condiciones del servicio"
+                    label="Acepto los terminos y condiciones del servicio"
+                    checked={form.aceptaTerminos}
+                    error={errors.aceptaTerminos}
+                    onChange={set}
                   />
                   <Checkbox
                     field="aceptaDatos"
-                    label="Acepto la política de tratamiento de datos personales (Ley 1581 de 2012)"
+                    label="Acepto la politica de tratamiento de datos personales (Ley 1581 de 2012)"
+                    checked={form.aceptaDatos}
+                    error={errors.aceptaDatos}
+                    onChange={set}
                   />
                 </div>
-
                 <button
-                  type="submit"
+                  type="button"
+                  onClick={handleSubmit}
                   disabled={loading}
-                  style={loading ? btnPrimaryDisabled : btnPrimary}
-                  onMouseEnter={e => {
-                    if (!loading) (e.target as HTMLButtonElement).style.backgroundColor = '#1D4ED8'
-                  }}
-                  onMouseLeave={e => {
-                    if (!loading) (e.target as HTMLButtonElement).style.backgroundColor = '#2563EB'
-                  }}
+                  className={`${primaryBtnClass} w-full py-3`}
                 >
-                  {loading ? 'Creando cuenta...' : 'Crear cuenta'}
+                  {loading ? "Creando cuenta..." : "Crear cuenta"}
                 </button>
-              </form>
+              </>
             )}
 
-            {/* ── Navegación entre steps ── */}
             {step < 3 && (
-              <div style={S.navRow(step > 1)}>
+              <div
+                className={`mt-2 flex border-t border-slate-200 pt-6 ${step > 1 ? "justify-between" : "justify-end"}`}
+              >
                 {step > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => setStep((step - 1) as Step)}
-                    style={btnSecondary}
-                    onMouseEnter={e =>
-                      ((e.target as HTMLButtonElement).style.backgroundColor = '#CBD5E1')
-                    }
-                    onMouseLeave={e =>
-                      ((e.target as HTMLButtonElement).style.backgroundColor = '#E2E8F0')
-                    }
-                  >
-                    Atrás
+                  <button type="button" onClick={prevStep} className={secondaryBtnClass}>
+                    Atras
                   </button>
                 )}
                 <button
                   type="button"
                   onClick={nextStep}
-                  style={{ ...btnPrimary, width: 'auto' }}
-                  onMouseEnter={e =>
-                    ((e.target as HTMLButtonElement).style.backgroundColor = '#1D4ED8')
-                  }
-                  onMouseLeave={e =>
-                    ((e.target as HTMLButtonElement).style.backgroundColor = '#2563EB')
-                  }
+                  className={`${primaryBtnClass} px-6 py-2.5`}
                 >
                   Continuar
                 </button>
@@ -733,21 +451,18 @@ export default function RegisterPage() {
             )}
           </div>
 
-          {/* Pie */}
-          <p style={S.footerText}>
-            Al registrarte aceptas nuestros{' '}
-            <a href="#" style={S.footerLink}>
-              Términos
-            </a>{' '}
-            y{' '}
-            <a href="#" style={S.footerLink}>
-              Política de privacidad
+          <p className="mt-6 text-center text-[13px] text-slate-400">
+            Al registrarte aceptas nuestros{" "}
+            <a href="#" className="text-blue-600 hover:text-blue-700">
+              Terminos
+            </a>{" "}
+            y{" "}
+            <a href="#" className="text-blue-600 hover:text-blue-700">
+              Politica de privacidad
             </a>
           </p>
         </div>
-      </main>
-
-      <style>{globalStyles}</style>
+      </div>
     </div>
-  )
+  );
 }
