@@ -100,8 +100,8 @@ export function useRegister() {
       e.confirmarContrasena = "Las contrasenas no coinciden";
     if (!form.direccion.trim()) e.direccion = "Campo requerido";
     if (form.direccion.length > 100) e.direccion = "Maximo 100 caracteres";
-    if (!/^\+\d{12}$/.test(form.telefono))
-      e.telefono = "El telefono debe tener el formato +570000000000";
+    if (!/^\d{7,15}$/.test(form.telefono))
+      e.telefono = "El telefono debe tener solo numeros (7 a 15 digitos)";
 
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -139,14 +139,10 @@ export function useRegister() {
           nombre: form.nombre,
           apellido: form.apellido,
           fechaNacimiento: form.fechaNacimiento,
-          lugarNacimiento: form.lugarNacimiento,
           correo: form.correo,
-          usuario: form.usuario,
-          contrasena: form.contrasena,
+          contrasenaHash: form.contrasena,
           direccion: form.direccion || undefined,
           telefono: form.telefono || undefined,
-          preferencias: form.preferencias,
-          rol: "cliente",
           estadoCuenta: true,
         }),
       });

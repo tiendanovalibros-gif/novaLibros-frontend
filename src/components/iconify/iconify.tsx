@@ -6,11 +6,11 @@ import Box from "@mui/material/Box";
 
 // ----------------------------------------------------------------------
 
-const Iconify = forwardRef(({ icon, width = 20, sx, ...other }: IconifyProps, ref) => (
+const Iconify = forwardRef(({ icon, width = 20, sx, className, ...other }: IconifyProps, ref) => (
   <Box
     ref={ref}
     component={Icon}
-    className="component-iconify"
+    className={`component-iconify ${className || ""}`}
     icon={icon}
     sx={{ width, height: width, ...sx }}
     {...other}
@@ -21,12 +21,8 @@ type IconifyProps = {
   icon: string;
   width?: number;
   sx?: object;
+  className?: string;
 };
 
-// Iconify.propTypes = {
-//   icon: PropTypes.oneOfType([PropTypes.element, PropTypes.string]),
-//   sx: PropTypes.object,
-//   width: PropTypes.number,
-// };
-
+Iconify.displayName = "Iconify";
 export default Iconify;

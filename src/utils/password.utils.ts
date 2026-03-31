@@ -2,7 +2,7 @@
 import type { StrengthInfo } from "@/types/forgotPassword.types";
 
 export const PASSWORD_RULES = {
-  allowed: /^[a-z0-9 !"#$%&'()*+,\-./:;<=>?@\[\]\\\^_`{|}~]+$/,
+  allowed: /^[a-zA-Z0-9 !"#$%&'()*+,\-./:;<=>?@\[\]\\\^_`{|}~]+$/,
   lowercase: /[a-z]/,
   number: /[0-9]/,
   symbol: /[ !"#$%&'()*+,\-./:;<=>?@\[\]\\\^_`{|}~]/,

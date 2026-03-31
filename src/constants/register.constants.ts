@@ -36,13 +36,13 @@ export const INITIAL_FORM: RegisterFormData = {
   contrasena: "",
   confirmarContrasena: "",
   direccion: "",
-  telefono: "+57 ",
+  telefono: "",
   preferencias: [],
   aceptaTerminos: false,
   aceptaDatos: false,
 };
 
-export const PASSWORD_ALLOWED_REGEX = /^[a-z0-9 !"#$%&'()*+,\-./:;<=>?@\[\]\\\^_`{|}~]+$/;
+export const PASSWORD_ALLOWED_REGEX = /^[a-zA-Z0-9 !"#$%&'()*+,\-./:;<=>?@\[\]\\\^_`{|}~]+$/;
 export const PASSWORD_LOWER_REGEX = /[a-z]/;
 export const PASSWORD_NUMBER_REGEX = /[0-9]/;
 export const PASSWORD_SYMBOL_REGEX = /[ !"#$%&'()*+,\-./:;<=>?@\[\]\\\^_`{|}~]/;

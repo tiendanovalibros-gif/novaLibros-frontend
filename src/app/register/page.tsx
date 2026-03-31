@@ -4,40 +4,10 @@ import { useRegister } from "@/hooks/useRegister";
 import { STEPS, GENEROS_LITERARIOS } from "@/constants/register.constants";
 import type { RegisterFormData } from "@/types/register.types";
 import Iconify from "@/components/iconify/iconify";
-import LayoutCard from "@/layouts/auth/authCard";
+import BannerCard from "@/components/authCard";
 import { Alert } from "@mui/material";
-
-// ─── Iconos ──────────────────────────────────────────────────────────────────
-const BookIcon = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-    <path
-      d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"
-      stroke="white"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"
-      stroke="white"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
-
-const CheckIcon = () => (
-  <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
-    <polyline
-      points="20 6 9 17 4 12"
-      stroke="white"
-      strokeWidth="3"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
+import Link from "next/link";
+import { useState, useRef, useEffect } from "react";
 
 // ─── Clases reutilizables ─────────────────────────────────────────────────────
 const inputClass = (hasError: boolean) =>
@@ -83,11 +53,95 @@ const Checkbox = ({ field, label, checked, error, onChange }: CheckboxProps) => 
           onKeyDown={e => e.key === " " && onChange(field, !checked)}
           className={`mt-[1px] flex h-[18px] w-[18px] min-w-[18px] items-center justify-center rounded-[4px] border-2 ${boxClass}`}
         >
-          {checked && <CheckIcon />}
+          {checked && <Iconify icon="material-symbols:check-rounded" className="text-white" />}
         </div>
         <span className="text-[14px] leading-[1.5] text-slate-600">{label}</span>
       </label>
       {error && <p className={`${errorTextClass} ml-[30px]`}>{error}</p>}
+    </div>
+  );
+};
+
+// ─── Select Personalizado ─────────────────────────────────────────────────────
+interface CustomSelectProps {
+  value: string;
+  onChange: (value: string) => void;
+  options: { value: string; label: string }[];
+  placeholder?: string;
+  hasError: boolean;
+}
+
+const CustomSelect = ({
+  value,
+  onChange,
+  options,
+  placeholder = "Seleccionar...",
+  hasError,
+}: CustomSelectProps) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const selectRef = useRef<HTMLDivElement>(null);
+
+  const selectedLabel = options.find(opt => opt.value === value)?.label || placeholder;
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen]);
+
+  return (
+    <div ref={selectRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className={`${inputClass(hasError)} flex w-full items-center justify-between text-left`}
+      >
+        <span className={value ? "text-slate-900" : "text-slate-400"}>{selectedLabel}</span>
+        <Iconify
+          icon="solar:alt-arrow-down-linear"
+          width={20}
+          className={`text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {isOpen && (
+        <div className="absolute z-50 mt-2 w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg animate-in fade-in slide-in-from-top-2 duration-200">
+          {options.map(option => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => {
+                onChange(option.value);
+                setIsOpen(false);
+              }}
+              className={`w-full px-[14px] py-[11px] text-left text-[15px] transition-colors hover:bg-blue-50 ${
+                value === option.value ? "bg-blue-50 font-semibold text-blue-600" : "text-slate-700"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span>{option.label}</span>
+                {value === option.value && (
+                  <Iconify
+                    icon="material-symbols:check-rounded"
+                    className="text-blue-600"
+                    width={20}
+                  />
+                )}
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
@@ -112,22 +166,21 @@ export default function RegisterPage() {
     errors[f] ? <p className={errorTextClass}>{errors[f]}</p> : null;
 
   return (
-    <div className="min-h-screen bg-slate-50 md:flex relative z-10 flex gap-8">
-      <LayoutCard
+    <div className="min-h-screen bg-slate-50 md:flex">
+      <BannerCard
         title="Descubre tu próxima"
         description="Accede a miles de títulos, gestiona tus reservas y compras, todo desde un solo lugar."
         highlight="gran lectura"
         eyebrow="Tu librería en línea"
-        logo={<BookIcon />}
       />
 
       <div className="flex w-full flex-1 items-center justify-center px-8 py-12">
         <div className="w-full max-w-[560px] rounded-2xl bg-white p-8 shadow-lg">
           <div className="mb-6 text-left text-[14px] text-slate-600">
             ¿Ya tienes cuenta?{" "}
-            <a href="/login" className="font-semibold text-blue-600 hover:text-blue-700">
+            <Link href="/login" className="font-semibold text-blue-600 hover:text-blue-700">
               Inicia sesion
-            </a>
+            </Link>
           </div>
 
           <div className="mb-8 text-center">
@@ -151,7 +204,7 @@ export default function RegisterPage() {
                       className={`flex h-9 w-9 items-center justify-center rounded-full transition-all ${active || done ? "bg-blue-600" : "bg-slate-200"}`}
                     >
                       {done ? (
-                        <CheckIcon />
+                        <Iconify icon="material-symbols:check-rounded" className="text-white" />
                       ) : (
                         <span
                           className={`${active ? "text-white" : "text-slate-400"} text-[14px] font-bold`}
@@ -247,17 +300,18 @@ export default function RegisterPage() {
                     <label className="mb-[7px] block text-[14px] font-semibold text-slate-900">
                       Genero
                     </label>
-                    <select
+                    <CustomSelect
                       value={form.genero}
-                      onChange={e => set("genero", e.target.value)}
-                      className={`${inputClass(!!errors.genero)} cursor-pointer`}
-                    >
-                      <option value="">Seleccionar...</option>
-                      <option value="masculino">Masculino</option>
-                      <option value="femenino">Femenino</option>
-                      <option value="otro">Otro</option>
-                      <option value="prefiero_no_decir">Prefiero no decir</option>
-                    </select>
+                      onChange={value => set("genero", value)}
+                      options={[
+                        { value: "masculino", label: "Masculino" },
+                        { value: "femenino", label: "Femenino" },
+                        { value: "otro", label: "Otro" },
+                        { value: "prefiero_no_decir", label: "Prefiero no decir" },
+                      ]}
+                      placeholder="Seleccionar..."
+                      hasError={!!errors.genero}
+                    />
                     {err("genero")}
                   </div>
                 </div>
@@ -346,7 +400,7 @@ export default function RegisterPage() {
                     Confirmar contrasena
                   </label>
                   <input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     value={form.confirmarContrasena}
                     onChange={e => set("confirmarContrasena", e.target.value)}
                     placeholder="Repite tu contrasena"
@@ -375,7 +429,7 @@ export default function RegisterPage() {
                     type="tel"
                     value={form.telefono}
                     onChange={e => set("telefono", e.target.value)}
-                    placeholder="+570000000000"
+                    placeholder="3001234567"
                     className={inputClass(!!errors.telefono)}
                   />
                   {err("telefono")}
