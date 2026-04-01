@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import BannerCard from "@/components/authCard";
 import Iconify from "@/components/iconify/iconify";
 import { useRouter } from "next/navigation";
-import { useStepEmail } from "@/components/forgot-password/useStepEmail";
+import { useStepEmail } from "@/hooks/useStepEmail";
 
 export default function ForgotPasswordPage() {
   const router = useRouter();

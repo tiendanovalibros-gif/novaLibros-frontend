@@ -14,6 +14,7 @@ interface AuthContextType {
   loading: boolean;
   login: (payload: LoginPayload) => Promise<Usuario>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
   isAuthenticated: boolean;
 }
 
@@ -63,6 +64,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(null);
   };
 
+  const refreshUser = async () => {
+    try {
+      const res = await fetch("/api/auth/me");
+      if (res.ok) {
+        const data = await res.json();
+        setUser(data.user ?? null);
+      } else {
+        setUser(null);
+        setToken(null);
+      }
+    } catch {
+      // Si falla, mantener el estado actual
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -71,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loading,
         login,
         logout,
+        refreshUser,
         isAuthenticated: !!user,
       }}
     >

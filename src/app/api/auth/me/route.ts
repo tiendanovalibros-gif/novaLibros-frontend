@@ -20,16 +20,41 @@ export async function GET() {
       return response
     }
 
-    // El JWT solo tiene sub, correo y rol
-    // nombre y apellido vienen del AuthContext (guardados en el login)
+    // Llamar al backend para obtener los datos completos del usuario
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+    const userResponse = await fetch(`${backendUrl}/users/${payload.sub}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    })
+
+    if (!userResponse.ok) {
+      // Si falla la llamada al backend, devolver datos básicos del JWT
+      const user = {
+        id: payload.sub,
+        correo: payload.correo,
+        rol: payload.rol,
+      }
+      return NextResponse.json({ user }, { status: 200 })
+    }
+
+    const userData = await userResponse.json()
+
+    // Devolver datos completos del usuario
     const user = {
-      id: payload.sub,
-      correo: payload.correo,
-      rol: payload.rol,
+      id: userData.id,
+      correo: userData.correo,
+      nombre: userData.nombre,
+      apellido: userData.apellido,
+      rol: userData.rol,
+      fechaNacimiento: userData.fechaNacimiento,
+      genero: userData.genero,
+      telefono: userData.telefono,
     }
 
     return NextResponse.json({ user }, { status: 200 })
-  } catch {
+  } catch (error) {
+    console.error('Error en /api/auth/me:', error)
     return NextResponse.json({ user: null }, { status: 500 })
   }
 }

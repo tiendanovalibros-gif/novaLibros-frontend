@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { apiFetch } from "@/services/api.client";
 import { useAuth } from "@/context/auth.context";
 import Link from "next/link";
@@ -363,8 +363,11 @@ export default function CataloguePage() {
   const [rangoIdx, setRangoIdx] = useState(0);
   const [orden, setOrden] = useState("relevancia");
   const [menuAbierto, setMenuAbierto] = useState(false);
+  const [menuUsuarioAbierto, setMenuUsuarioAbierto] = useState(false);
 
-  const { user, isAuthenticated, logout } = useAuth();
+  const menuUsuarioRef = useRef<HTMLDivElement>(null);
+
+  const { user, isAuthenticated, logout, refreshUser } = useAuth();
   const nombreVisible = user?.nombre ? `${user.nombre} ${user.apellido}`.trim() : "";
   const inicialesPerfil = user
     ? `${user.nombre?.charAt(0).toUpperCase() ?? ""}${user.apellido?.charAt(0).toUpperCase() ?? ""}`
@@ -372,7 +375,28 @@ export default function CataloguePage() {
 
   useEffect(() => {
     cargarDatos();
+    // Refrescar datos del usuario al montar el componente
+    if (isAuthenticated) {
+      refreshUser();
+    }
   }, []);
+
+  // Cerrar menú de usuario al hacer click fuera
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuUsuarioRef.current && !menuUsuarioRef.current.contains(event.target as Node)) {
+        setMenuUsuarioAbierto(false);
+      }
+    };
+
+    if (menuUsuarioAbierto) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [menuUsuarioAbierto]);
 
   const cargarDatos = async () => {
     setLoading(true);
@@ -476,41 +500,82 @@ export default function CataloguePage() {
                     🛠️ Admin
                   </a>
                 ) : (
-                  <a
+                  <Link
                     href="/carrito"
-                    className="px-3 py-2 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 hover:bg-slate-50 transition-colors flex items-center gap-2"
+                    className="px-3 py-2 rounded-full text-sm font-semibold text-slate-800 hover:bg-slate-100 transition-colors flex items-center gap-2"
                     title="Carrito"
                   >
-                    <CartIcon />
-                    Carrito
-                  </a>
+                    <Iconify icon="material-symbols:shopping-cart-outline-rounded" />
+                  </Link>
                 )}
 
                 <button
-                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 hover:bg-slate-50 transition-colors relative"
+                  className="px-3 py-2 rounded-full text-sm font-semibold text-slate-800 hover:bg-slate-100 transition-colors relative"
                   title="Notificaciones"
                 >
-                  🔔
+                  <Iconify icon="material-symbols:notifications-outline" />
                   <span className="absolute -top-1 -right-1 w-4 h-4 text-[10px] leading-4 rounded-full bg-red-500 text-white flex items-center justify-center">
                     3
                   </span>
                 </button>
 
-                <div className="flex items-center gap-2 px-3 py-2 border border-slate-300 rounded-full bg-slate-50">
-                  <span className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold">
-                    {inicialesPerfil || "U"}
-                  </span>
-                  <span className="text-sm font-semibold text-slate-700 truncate max-w-[120px]">
-                    {nombreVisible || "Usuario"}
-                  </span>
-                </div>
+                {/* Menú de usuario con dropdown */}
+                <div ref={menuUsuarioRef} className="relative">
+                  <button
+                    onClick={() => setMenuUsuarioAbierto(!menuUsuarioAbierto)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-full bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer"
+                  >
+                    <span className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm">
+                      {inicialesPerfil || "U"}
+                    </span>
+                    <span className="text-sm font-semibold text-slate-700 truncate max-w-[120px]">
+                      {nombreVisible || "Usuario"}
+                    </span>
+                    <Iconify
+                      icon="solar:alt-arrow-down-linear"
+                      className={`text-slate-600 transition-transform ${
+                        menuUsuarioAbierto ? "rotate-180" : ""
+                      }`}
+                      width={16}
+                    />
+                  </button>
 
-                <button
-                  onClick={() => logout()}
-                  className="px-3 py-2 border border-red-300 text-red-700 rounded-lg text-sm font-semibold hover:bg-red-50"
-                >
-                  Cerrar sesión
-                </button>
+                  {/* Dropdown */}
+                  {menuUsuarioAbierto && (
+                    <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-lg border border-slate-200 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                      {/* Info del usuario */}
+                      <div className="px-4 py-3 border-b border-slate-100">
+                        <p className="text-sm font-semibold text-slate-900">
+                          {nombreVisible || "Usuario"}
+                        </p>
+                        <p className="text-xs text-slate-500 truncate">{user?.correo}</p>
+                      </div>
+
+                      {/* Opciones */}
+                      <div className="py-1">
+                        <Link
+                          href="/profile"
+                          onClick={() => setMenuUsuarioAbierto(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                        >
+                          <Iconify icon="gg:profile" width={20} />
+                          <span className="font-medium">Mi Perfil</span>
+                        </Link>
+
+                        <button
+                          onClick={() => {
+                            setMenuUsuarioAbierto(false);
+                            logout();
+                          }}
+                          className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                        >
+                          <Iconify icon="material-symbols:logout-rounded" width={20} />
+                          <span className="font-medium">Cerrar sesión</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </>
             ) : (
               <>
