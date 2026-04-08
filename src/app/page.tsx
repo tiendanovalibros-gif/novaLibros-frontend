@@ -34,6 +34,14 @@ interface Editorial {
   nombre: string;
 }
 
+// ─── Funciones de utilidad ───────────────────────────────────────────────────
+const formatearPrecio = (precio: number): string => {
+  return precio.toLocaleString("es-CO", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  });
+};
+
 // ─── Constantes ──────────────────────────────────────────────────────────────
 const RANGOS_PRECIO = [
   { min: 0, max: 1000000, label: "Todos los precios" },
@@ -51,66 +59,6 @@ const OPCIONES_ORDEN = [
   { value: "antiguo", label: "Más antiguos" },
   { value: "az", label: "Alfabético A-Z" },
 ];
-
-// ─── Iconos ───────────────────────────────────────────────────────────────────
-const BookIcon = ({ size = 20 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <path
-      d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"
-      stroke="white"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"
-      stroke="white"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
-
-const SearchIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-slate-400">
-    <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2" />
-    <line
-      x1="21"
-      y1="21"
-      x2="16.65"
-      y2="16.65"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-    />
-  </svg>
-);
-
-const CartIcon = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-    <path
-      d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"
-      stroke="#2563EB"
-      strokeWidth="2"
-      strokeLinecap="round"
-    />
-    <line x1="3" y1="6" x2="21" y2="6" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" />
-    <path d="M16 10a4 4 0 0 1-8 0" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" />
-  </svg>
-);
-
-const LockIcon = () => (
-  <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
-    <rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" strokeWidth="2" />
-    <path
-      d="M7 11V7a5 5 0 0 1 10 0v4"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-    />
-  </svg>
-);
 
 const MenuIcon = () => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
@@ -291,13 +239,13 @@ const BookCard = ({
   return (
     <a
       href={`/books/${libro.id}`}
-      className="bg-white border border-slate-200 rounded-xl overflow-hidden transition-all duration-150 hover:-translate-y-1 hover:shadow-lg group block no-underline"
+      className="bg-white border border-slate-200 rounded-xl overflow-hidden transition-all duration-150 hover:-translate-y-1 hover:shadow-lg group block no-underline flex flex-col"
     >
       <div className="w-full aspect-[2/3] relative overflow-hidden">
         <BookCover libro={libro} />
       </div>
 
-      <div className="p-3">
+      <div className="p-3 flex flex-col flex-1">
         <p className="text-slate-900 text-sm font-bold leading-snug mb-1 line-clamp-2">
           {libro.titulo}
         </p>
@@ -306,15 +254,13 @@ const BookCard = ({
           {nombreGenero(libro.idGenero)}
         </span>
 
-        <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+        <div className="flex items-center justify-between pt-2 border-t border-slate-100 mt-auto">
           <div>
-            <p className="text-blue-600 font-bold text-base">
-              ${libro.precio.toLocaleString("es-CO")}
-            </p>
+            <p className="text-blue-600 font-bold text-base">${formatearPrecio(libro.precio)}</p>
             <div className="flex items-center gap-1 mt-0.5 text-xs">
               {!canAddToCart ? (
                 <>
-                  <LockIcon />
+                  <Iconify icon="gg:lock" className="text-slate-400" width={24} />
                   <span className="italic text-slate-400">
                     {isAuthenticated
                       ? "Solo clientes pueden comprar"
@@ -341,7 +287,7 @@ const BookCard = ({
               alert(`Agregaste al carrito: ${libro.titulo}`);
             }}
           >
-            <CartIcon />
+            <Iconify icon="icon-park-outline:mall-bag" className="text-slate-300" width={18} />
           </div>
         </div>
       </div>
@@ -481,12 +427,12 @@ export default function CataloguePage() {
       {/* ── Navbar ── */}
       <nav className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <Link href="/" className="flex items-center gap-3">
             <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center shrink-0">
-              <BookIcon size={20} />
+              <Iconify icon="solar:book-2-bold" className="text-white" width={24} />
             </div>
             <span className="text-slate-900 text-xl font-bold tracking-tight">NovaLibros</span>
-          </div>
+          </Link>
 
           <div className="hidden sm:flex items-center gap-3">
             {isAuthenticated ? (
@@ -622,12 +568,12 @@ export default function CataloguePage() {
                     Carrito
                   </a>
                 )}
-                <a
+                <Link
                   href="/profile"
                   className="w-full text-center py-2.5 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800"
                 >
                   Perfil
-                </a>
+                </Link>
                 <button
                   className="w-full text-center py-2.5 bg-red-100 text-red-700 rounded-lg font-semibold"
                   onClick={() => logout()}
@@ -676,7 +622,11 @@ export default function CataloguePage() {
           <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3 max-w-xl">
             <div className="relative flex-1">
               <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                <SearchIcon />
+                <Iconify
+                  icon="material-symbols:search-rounded"
+                  width={24}
+                  className="text-slate-400"
+                />
               </div>
               <input
                 type="text"
@@ -858,7 +808,7 @@ export default function CataloguePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <BookIcon size={16} />
+              <Iconify icon="solar:book-2-bold" className="text-white" width={24} />
             </div>
             <span className="text-white font-bold text-base">NovaLibros</span>
           </div>

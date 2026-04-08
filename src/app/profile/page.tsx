@@ -28,7 +28,7 @@ export default function ProfilePage() {
   // ─────────────────────────────────────────────────────────────────────────────
   // Estado y Hooks
   // ─────────────────────────────────────────────────────────────────────────────
-  const { user, loading, isAuthenticated } = useAuth();
+  const { user, loading, isAuthenticated, logout } = useAuth();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [preferencias, setPreferencias] = useState<Preferencia[]>([]);
@@ -209,20 +209,15 @@ export default function ProfilePage() {
             </Link>
 
             <div className="flex items-center gap-4">
-              <Link
-                href="/"
-                className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-100"
+              <button
+                onClick={() => {
+                  logout();
+                }}
+                className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
               >
-                <Iconify icon="solar:home-2-linear" width={20} />
-                Inicio
-              </Link>
-              <Link
-                href="/books"
-                className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-100"
-              >
-                <Iconify icon="solar:book-linear" width={20} />
-                Catálogo
-              </Link>
+                <Iconify icon="material-symbols:logout-rounded" width={20} />
+                <span className="font-medium">Cerrar sesión</span>
+              </button>
             </div>
           </div>
         </div>
@@ -298,11 +293,7 @@ export default function ProfilePage() {
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
               <div className="mb-6 flex items-center gap-3">
                 <div className="rounded-lg bg-blue-50 p-2">
-                  <Iconify
-                    icon="solar:user-id-bold-duotone"
-                    className="text-blue-600"
-                    width={24}
-                  />
+                  <Iconify icon="solar:user-id-bold-duotone" className="text-blue-600" width={24} />
                 </div>
                 <div>
                   <h2 className="text-xl font-bold text-slate-900">Información Personal</h2>
@@ -348,7 +339,7 @@ export default function ProfilePage() {
                 </div>
               ) : preferencias.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
-                  {preferencias.map((pref) => (
+                  {preferencias.map(pref => (
                     <span
                       key={pref.idGenero}
                       className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-50 to-purple-50 px-4 py-2 text-sm font-semibold text-slate-900 ring-1 ring-blue-200"
