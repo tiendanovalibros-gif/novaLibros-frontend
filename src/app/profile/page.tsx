@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Iconify from "@/components/iconify/iconify";
 import { apiFetch } from "@/services/api.client";
-import { Usuario } from "@/services/auth.service";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TIPOS E INTERFACES
