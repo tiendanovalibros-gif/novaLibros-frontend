@@ -1,12 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import Iconify from "@/components/iconify/iconify";
 
 export default function NotFound() {
-  const router = useRouter();
-
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 px-4">
       {/* Contenedor principal */}
