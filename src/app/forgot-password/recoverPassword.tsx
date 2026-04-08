@@ -11,7 +11,6 @@ const inputClass = (hasError: boolean) =>
 
 const labelClass = "mb-2 block text-[14px] font-semibold text-slate-900";
 const fieldClass = "mb-5";
-const errorTextClass = "mt-1.5 text-[12px] text-red-800";
 const primaryButtonClass =
   "w-full rounded-lg bg-blue-600 py-3 text-[15px] font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300";
 
