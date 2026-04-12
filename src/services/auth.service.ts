@@ -83,3 +83,17 @@ export async function getUserById(id: string, token: string): Promise<Usuario> {
     headers: { Authorization: `Bearer ${token}` },
   })
 }
+
+export async function forgotPassword(correo: string): Promise<void> {
+  await apiFetch("/users/forgot-password", {
+    method: "POST",
+    body: JSON.stringify({ correo }),
+  });
+}
+
+export async function resetPassword(token: string, nuevaContrasena: string): Promise<void> {
+  await apiFetch("/users/reset-password", {
+    method: "POST",
+    body: JSON.stringify({ token, nuevaContrasena }),
+  });
+}
