@@ -4,8 +4,11 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import {
   login as loginService,
   logout as logoutService,
+  getProfile as getProfileService,
+  updateProfile as updateProfileService,
   type Usuario,
   type LoginPayload,
+  type UpdateProfilePayload,
 } from "@/services/auth.service";
 
 interface AuthContextType {
@@ -15,6 +18,7 @@ interface AuthContextType {
   login: (payload: LoginPayload) => Promise<Usuario>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  updateProfile: (userId: string, payload: UpdateProfilePayload) => Promise<Usuario>;
   isAuthenticated: boolean;
 }
 
@@ -64,6 +68,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(null);
   };
 
+  const updateProfile = async (userId: string, payload: UpdateProfilePayload) => {
+    const updated = await updateProfileService(userId, payload);
+    try {
+      const profile = await getProfileService();
+      setUser(profile);
+      return profile;
+    } catch {
+      setUser(updated);
+      return updated;
+    }
+  };
+
   const refreshUser = async () => {
     try {
       const res = await fetch("/api/auth/me");
@@ -88,6 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         logout,
         refreshUser,
+        updateProfile,
         isAuthenticated: !!user,
       }}
     >

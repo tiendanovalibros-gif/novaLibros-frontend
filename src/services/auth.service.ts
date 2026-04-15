@@ -24,6 +24,16 @@ export interface Usuario {
   apellido: string
   correo: string
   rol: 'root' | 'administrador' | 'cliente'
+  telefono?: string | null
+  direccion?: string | null
+  fechaNacimiento?: string | null
+  genero?: string | null
+}
+
+export interface UpdateProfilePayload {
+  correo: string
+  telefono?: string
+  direccion?: string
 }
 
 export interface LoginResponse {
@@ -96,4 +106,30 @@ export async function resetPassword(token: string, nuevaContrasena: string): Pro
     method: "POST",
     body: JSON.stringify({ token, nuevaContrasena }),
   });
+}
+
+export async function getProfile(): Promise<Usuario> {
+  return apiFetch<Usuario>('/users/profile')
+}
+
+export async function updateProfile(
+  userId: string,
+  payload: UpdateProfilePayload
+): Promise<Usuario> {
+  return apiFetch<Usuario>(`/users/${userId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function updateProfileUser(id: string, correo?: string, telefono?: string, direccion?: string): Promise<void> {
+  const body: Record<string, string> = {};
+  if (correo !== undefined) body.correo = correo;
+  if (telefono !== undefined) body.telefono = telefono;
+  if (direccion !== undefined) body.direccion = direccion;
+
+  await apiFetch(`/users/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ correo, telefono, direccion }),
+  })
 }

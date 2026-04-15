@@ -50,6 +50,7 @@ export async function GET() {
       fechaNacimiento: userData.fechaNacimiento,
       genero: userData.genero,
       telefono: userData.telefono,
+      direccion: userData.direccion,
     }
 
     return NextResponse.json({ user }, { status: 200 })

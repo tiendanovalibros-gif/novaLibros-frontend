@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Iconify from "@/components/iconify/iconify";
 import { apiFetch } from "@/services/api.client";
+import { getProfile, type Usuario } from "@/services/auth.service";
+import ProfileEditView from "./profile-edit-view";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TIPOS E INTERFACES
@@ -27,11 +29,16 @@ export default function ProfilePage() {
   // ─────────────────────────────────────────────────────────────────────────────
   // Estado y Hooks
   // ─────────────────────────────────────────────────────────────────────────────
-  const { user, loading, isAuthenticated, logout } = useAuth();
+  const { loading, isAuthenticated, logout } = useAuth();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
+  const [profile, setProfile] = useState<Usuario | null>(null);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [profileError, setProfileError] = useState("");
   const [preferencias, setPreferencias] = useState<Preferencia[]>([]);
   const [loadingPreferencias, setLoadingPreferencias] = useState(true);
+  const [editOpen, setEditOpen] = useState(false);
+  const [saveMessage, setSaveMessage] = useState("");
 
   // ─────────────────────────────────────────────────────────────────────────────
   // Efectos
@@ -47,10 +54,21 @@ export default function ProfilePage() {
   }, [mounted, loading, isAuthenticated, router]);
 
   useEffect(() => {
-    if (user?.id) {
-      cargarPreferencias(user.id);
+    if (!mounted || loading || !isAuthenticated) return;
+    cargarPerfil();
+  }, [mounted, loading, isAuthenticated]);
+
+  useEffect(() => {
+    if (profile?.id) {
+      cargarPreferencias(profile.id);
     }
-  }, [user?.id]);
+  }, [profile?.id]);
+
+  useEffect(() => {
+    if (!saveMessage) return;
+    const timer = setTimeout(() => setSaveMessage(""), 4000);
+    return () => clearTimeout(timer);
+  }, [saveMessage]);
 
   // ─────────────────────────────────────────────────────────────────────────────
   // Funciones
@@ -64,6 +82,20 @@ export default function ProfilePage() {
       console.error("Error al cargar preferencias:", error);
     } finally {
       setLoadingPreferencias(false);
+    }
+  };
+
+  const cargarPerfil = async () => {
+    try {
+      setLoadingProfile(true);
+      setProfileError("");
+      const data = await getProfile();
+      setProfile(data);
+    } catch (error) {
+      console.error("Error al cargar perfil:", error);
+      setProfileError("No se pudo cargar el perfil.");
+    } finally {
+      setLoadingProfile(false);
     }
   };
 
@@ -97,15 +129,20 @@ export default function ProfilePage() {
     return rol;
   };
 
+  const handleEditSaved = async () => {
+    await cargarPerfil();
+    setSaveMessage("Informacion actualizada correctamente.");
+  };
+
   // ─────────────────────────────────────────────────────────────────────────────
   // Datos Derivados
   // ─────────────────────────────────────────────────────────────────────────────
-  const nombreCompleto = user ? `${user.nombre} ${user.apellido}`.trim() : "";
-  const iniciales = user
-    ? `${user.nombre?.charAt(0).toUpperCase() ?? ""}${user.apellido?.charAt(0).toUpperCase() ?? ""}`
+  const nombreCompleto = profile ? `${profile.nombre} ${profile.apellido}`.trim() : "";
+  const iniciales = profile
+    ? `${profile.nombre?.charAt(0).toUpperCase() ?? ""}${profile.apellido?.charAt(0).toUpperCase() ?? ""}`
     : "";
 
-  const infoItems = user
+  const infoItems = profile
     ? [
         {
           icon: "solar:user-id-bold-duotone",
@@ -115,27 +152,27 @@ export default function ProfilePage() {
         {
           icon: "solar:letter-bold-duotone",
           label: "Correo electrónico",
-          value: user.correo,
+          value: profile.correo,
         },
         {
           icon: "solar:phone-bold-duotone",
           label: "Teléfono",
-          value: user.telefono || "No especificado",
+          value: profile.telefono || "No especificado",
         },
         {
           icon: "solar:calendar-bold-duotone",
           label: "Fecha de nacimiento",
-          value: formatearFecha(user.fechaNacimiento),
+          value: formatearFecha(profile.fechaNacimiento),
         },
         {
           icon: "solar:user-bold-duotone",
           label: "Género",
-          value: formatearGenero(user.genero),
+          value: formatearGenero(profile.genero),
         },
         {
           icon: "solar:shield-user-bold-duotone",
           label: "Rol",
-          value: formatearRol(user.rol),
+          value: formatearRol(profile.rol),
         },
       ]
     : [];
@@ -174,7 +211,7 @@ export default function ProfilePage() {
   // ─────────────────────────────────────────────────────────────────────────────
   // Estados de carga y validación
   // ─────────────────────────────────────────────────────────────────────────────
-  if (!mounted || loading) {
+  if (!mounted || loading || loadingProfile) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50">
         <div className="text-center">
@@ -185,8 +222,15 @@ export default function ProfilePage() {
     );
   }
 
-  if (!user) {
-    return null;
+  if (!profile) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+        <div className="max-w-md rounded-xl border border-slate-200 bg-white p-6 text-center shadow-sm">
+          <p className="text-sm font-semibold text-slate-700">Perfil no disponible</p>
+          <p className="mt-2 text-sm text-slate-500">{profileError || "Intenta nuevamente mas tarde."}</p>
+        </div>
+      </div>
+    );
   }
 
   // ═══════════════════════════════════════════════════════════════════════════════
@@ -263,7 +307,7 @@ export default function ProfilePage() {
                 <h1 className="mb-1 text-3xl font-bold">{nombreCompleto || "Usuario"}</h1>
                 <p className="mb-3 flex items-center gap-2 text-blue-100">
                   <Iconify icon="solar:letter-bold-duotone" width={18} />
-                  {user.correo}
+                  {profile.correo}
                 </p>
                 <div className="flex items-center gap-4 text-sm">
                   <span className="rounded-full bg-white/20 px-3 py-1 backdrop-blur-sm">
@@ -272,13 +316,19 @@ export default function ProfilePage() {
                       width={16}
                       className="mr-1 inline"
                     />
-                    {formatearRol(user.rol)}
+                    {formatearRol(profile.rol)}
                   </span>
                 </div>
               </div>
             </div>
           </div>
         </div>
+
+        {saveMessage && (
+          <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+            {saveMessage}
+          </div>
+        )}
 
         {/* ─────────────────────────────────────────────────────────────────────────
             GRID DE CONTENIDO
@@ -435,7 +485,10 @@ export default function ProfilePage() {
               </div>
 
               <div className="space-y-3">
-                <button className="flex w-full items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 text-left transition-all hover:border-blue-300 hover:bg-blue-50">
+                <button
+                  onClick={() => setEditOpen(true)}
+                  className="flex w-full items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 text-left transition-all hover:border-blue-300 hover:bg-blue-50"
+                >
                   <div className="rounded-lg bg-blue-100 p-2">
                     <Iconify icon="solar:pen-bold-duotone" className="text-blue-600" width={20} />
                   </div>
@@ -501,6 +554,15 @@ export default function ProfilePage() {
           <p>© 2024 NovaLibros. Tu librería en línea de confianza.</p>
         </div>
       </footer>
+
+      {profile && (
+        <ProfileEditView
+          open={editOpen}
+          onClose={() => setEditOpen(false)}
+          user={profile}
+          onSaved={handleEditSaved}
+        />
+      )}
     </div>
   );
 }
