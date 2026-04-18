@@ -26,8 +26,14 @@ export function useProfileEdit({ user, open, onSuccess }: UseProfileEditOptions)
   }, [open, user]);
 
   const validate = (): boolean => {
-    if (!correo.trim() || !/\S+@\S+\.\S+/.test(correo)) {
+    const trimmedEmail = correo.trim();
+    if (!trimmedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
       setError("Ingresa un correo valido.");
+      return false;
+    }
+    const trimmedPhone = telefono.trim();
+    if (!/^3\d{9}$/.test(trimmedPhone)) {
+      setError("Ingrese un numero de telefono valido.");
       return false;
     }
     return true;
@@ -46,7 +52,7 @@ export function useProfileEdit({ user, open, onSuccess }: UseProfileEditOptions)
 
     const payload: UpdateProfilePayload = {
       correo: correo.trim(),
-      telefono: telefono.trim() || undefined,
+      telefono: telefono.trim(),
       direccion: direccion.trim() || undefined,
     };
 

@@ -108,6 +108,16 @@ export async function resetPassword(token: string, nuevaContrasena: string): Pro
   });
 }
 
+export async function changePassword(
+  contrasenaActual: string,
+  nuevaContrasena: string
+): Promise<void> {
+  await apiFetch('/users/change-password', {
+    method: 'PATCH',
+    body: JSON.stringify({ contrasenaActual, nuevaContrasena }),
+  })
+}
+
 export async function getProfile(): Promise<Usuario> {
   return apiFetch<Usuario>('/users/profile')
 }

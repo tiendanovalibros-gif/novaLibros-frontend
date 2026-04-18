@@ -6,8 +6,9 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Iconify from "@/components/iconify/iconify";
 import { apiFetch } from "@/services/api.client";
-import { getProfile, type Usuario } from "@/services/auth.service";
+import { changePassword, getProfile, type Usuario } from "@/services/auth.service";
 import ProfileEditView from "./profile-edit-view";
+import ProfilePasswordEditView from "./profile-password-edit-view";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TIPOS E INTERFACES
@@ -35,10 +36,11 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<Usuario | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [profileError, setProfileError] = useState("");
-  const [preferencias, setPreferencias] = useState<Preferencia[]>([]);
-  const [loadingPreferencias, setLoadingPreferencias] = useState(true);
+    // const [preferencias, setPreferencias] = useState<Preferencia[]>([]);
+    // const [loadingPreferencias, setLoadingPreferencias] = useState(true);
   const [editOpen, setEditOpen] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 
   // ─────────────────────────────────────────────────────────────────────────────
   // Efectos
@@ -58,11 +60,11 @@ export default function ProfilePage() {
     cargarPerfil();
   }, [mounted, loading, isAuthenticated]);
 
-  useEffect(() => {
-    if (profile?.id) {
-      cargarPreferencias(profile.id);
-    }
-  }, [profile?.id]);
+  // useEffect(() => {
+  //   if (profile?.id) {
+  //     cargarPreferencias(profile.id);
+  //   }
+  // }, [profile?.id]);
 
   useEffect(() => {
     if (!saveMessage) return;
@@ -73,17 +75,17 @@ export default function ProfilePage() {
   // ─────────────────────────────────────────────────────────────────────────────
   // Funciones
   // ─────────────────────────────────────────────────────────────────────────────
-  const cargarPreferencias = async (userId: string) => {
-    try {
-      setLoadingPreferencias(true);
-      const data = await apiFetch<Preferencia[]>(`/usuarios-preferencias/${userId}`);
-      setPreferencias(data);
-    } catch (error) {
-      console.error("Error al cargar preferencias:", error);
-    } finally {
-      setLoadingPreferencias(false);
-    }
-  };
+  // const cargarPreferencias = async (userId: string) => {
+  //   try {
+  //     setLoadingPreferencias(true);
+  //     const data = await apiFetch<Preferencia[]>(`/usuarios-preferencias/${userId}`);
+  //     setPreferencias(data);
+  //   } catch (error) {
+  //     console.error("Error al cargar preferencias:", error);
+  //   } finally {
+  //     setLoadingPreferencias(false);
+  //   }
+  // };
 
   const cargarPerfil = async () => {
     try {
@@ -132,6 +134,10 @@ export default function ProfilePage() {
   const handleEditSaved = async () => {
     await cargarPerfil();
     setSaveMessage("Informacion actualizada correctamente.");
+  };
+
+  const handlePasswordSaved = () => {
+    setSaveMessage("Contrasena actualizada correctamente.");
   };
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -371,7 +377,7 @@ export default function ProfilePage() {
             </div>
 
             {/* Preferencias */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            {/* <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
               <div className="mb-6 flex items-center gap-3">
                 <div className="rounded-lg bg-orange-50 p-2">
                   <Iconify icon="solar:heart-bold-duotone" className="text-orange-600" width={24} />
@@ -415,7 +421,7 @@ export default function ProfilePage() {
                   </p>
                 </div>
               )}
-            </div>
+            </div> */}
           </div>
 
           {/* ═══════════════════════════════════════════════════════════════════════
@@ -423,7 +429,7 @@ export default function ProfilePage() {
           ═══════════════════════════════════════════════════════════════════════ */}
           <div className="space-y-6">
             {/* Estadísticas */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            {/* <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
               <div className="mb-6 flex items-center gap-3">
                 <div className="rounded-lg bg-purple-50 p-2">
                   <Iconify icon="solar:chart-bold-duotone" className="text-purple-600" width={24} />
@@ -466,7 +472,7 @@ export default function ProfilePage() {
                   </div>
                 </div>
               </div>
-            </div>
+            </div> */}
 
             {/* Acciones Rápidas */}
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -503,7 +509,10 @@ export default function ProfilePage() {
                   />
                 </button>
 
-                <button className="flex w-full items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 text-left transition-all hover:border-purple-300 hover:bg-purple-50">
+                <button
+                  onClick={()=> setChangePasswordOpen(true)}
+                  className="flex w-full items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 text-left transition-all hover:border-purple-300 hover:bg-purple-50"
+                >
                   <div className="rounded-lg bg-purple-100 p-2">
                     <Iconify
                       icon="solar:lock-password-bold-duotone"
@@ -556,12 +565,21 @@ export default function ProfilePage() {
       </footer>
 
       {profile && (
-        <ProfileEditView
+        <><ProfileEditView
           open={editOpen}
           onClose={() => setEditOpen(false)}
           user={profile}
           onSaved={handleEditSaved}
         />
+        <ProfilePasswordEditView
+          open={changePasswordOpen}
+          onClose={() => setChangePasswordOpen(false)}
+          onSubmit={async (currentPassword, newPassword) => {
+            await changePassword(currentPassword, newPassword);
+          }}
+          onSaved={handlePasswordSaved}
+        />
+        </>
       )}
     </div>
   );
