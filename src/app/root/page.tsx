@@ -1,32 +1,32 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useAuth } from '@/context/auth.context'
-import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
-import MainNavbar from '@/components/navigation/main-navbar'
+import { useState } from "react";
+import { useAuth } from "@/context/auth.context";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import MainNavbar from "@/components/navigation/main-navbar";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 function getToken(): string {
-  if (typeof document === 'undefined') return ''
-  const match = document.cookie.match(/auth_token=([^;]+)/)
-  return match ? match[1] : ''
+  if (typeof document === "undefined") return "";
+  const match = document.cookie.match(/auth_token=([^;]+)/);
+  return match ? match[1] : "";
 }
 
 async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const token = getToken()
+  const token = getToken();
   const res = await fetch(`${API_URL}${endpoint}`, {
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers,
     },
     ...options,
-  })
-  const data = await res.json()
-  if (!res.ok) throw new Error(data?.message || 'Error en el servidor')
-  return data
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.message || "Error en el servidor");
+  return data;
 }
 
 const BookIcon = () => (
@@ -46,7 +46,7 @@ const BookIcon = () => (
       strokeLinejoin="round"
     />
   </svg>
-)
+);
 const CloseIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
     <line
@@ -68,7 +68,7 @@ const CloseIcon = () => (
       strokeLinecap="round"
     />
   </svg>
-)
+);
 const PlusIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
     <line
@@ -90,7 +90,7 @@ const PlusIcon = () => (
       strokeLinecap="round"
     />
   </svg>
-)
+);
 
 const Input = ({
   label,
@@ -103,14 +103,14 @@ const Input = ({
       className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors disabled:bg-slate-50 disabled:text-slate-500"
     />
   </div>
-)
+);
 
 const Select = ({
   label,
   children,
   ...props
 }: { label: string } & React.SelectHTMLAttributes<HTMLSelectElement> & {
-    children: React.ReactNode
+    children: React.ReactNode;
   }) => (
   <div>
     <label className="block text-slate-700 text-sm font-semibold mb-1.5">{label}</label>
@@ -121,16 +121,16 @@ const Select = ({
       {children}
     </select>
   </div>
-)
+);
 
 const Modal = ({
   title,
   onClose,
   children,
 }: {
-  title: string
-  onClose: () => void
-  children: React.ReactNode
+  title: string;
+  onClose: () => void;
+  children: React.ReactNode;
 }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
     <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
@@ -150,127 +150,127 @@ const Modal = ({
       <div className="p-6">{children}</div>
     </div>
   </div>
-)
+);
 
 export default function AdminLibrosPage() {
-  const { user, isAuthenticated, loading } = useAuth()
-  const router = useRouter()
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [formError, setFormError] = useState('')
-  const [saving, setSaving] = useState(false)
+  const { user, isAuthenticated, loading } = useAuth();
+  const router = useRouter();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [saving, setSaving] = useState(false);
   const [adminForm, setAdminForm] = useState({
-    dni: '',
-    nombre: '',
-    apellido: '',
-    fechaNacimiento: '',
-    correo: '',
-    contrasenaHash: '',
-    direccion: '',
-    telefono: '',
+    dni: "",
+    nombre: "",
+    apellido: "",
+    fechaNacimiento: "",
+    correo: "",
+    contrasenaHash: "",
+    direccion: "",
+    telefono: "",
     estadoCuenta: true,
-  })
+  });
   // 🔐 PROTECCIÓN ROOT
   useEffect(() => {
-    if (loading) return
+    if (loading) return;
 
     // Si no está autenticado → login
     if (!isAuthenticated) {
-      router.push('/login')
-      return
+      router.push("/login");
+      return;
     }
 
     // Si está autenticado pero no es root → home
-    if (user?.rol !== 'root') {
-      router.push('/')
-      return
+    if (user?.rol !== "root") {
+      router.push("/");
+      return;
     }
-  }, [loading, isAuthenticated, user?.rol, router])
+  }, [loading, isAuthenticated, user?.rol, router]);
 
   const closeDialog = () => {
-    setDialogOpen(false)
-    setFormError('')
-  }
+    setDialogOpen(false);
+    setFormError("");
+  };
 
   const openDialog = () => {
     setAdminForm({
-      dni: '',
-      nombre: '',
-      apellido: '',
-      fechaNacimiento: '',
-      correo: '',
-      contrasenaHash: '',
-      direccion: '',
-      telefono: '',
+      dni: "",
+      nombre: "",
+      apellido: "",
+      fechaNacimiento: "",
+      correo: "",
+      contrasenaHash: "",
+      direccion: "",
+      telefono: "",
       estadoCuenta: true,
-    })
-    setFormError('')
-    setDialogOpen(true)
-  }
+    });
+    setFormError("");
+    setDialogOpen(true);
+  };
 
   const setF = (key: string, value: string | boolean) =>
-    setAdminForm(prev => ({ ...prev, [key]: value }))
+    setAdminForm(prev => ({ ...prev, [key]: value }));
 
   const validar = (): boolean => {
     if (!adminForm.dni.trim()) {
-      setFormError('El DNI es requerido')
-      return false
+      setFormError("El DNI es requerido");
+      return false;
     }
     if (!adminForm.nombre.trim()) {
-      setFormError('El nombre es requerido')
-      return false
+      setFormError("El nombre es requerido");
+      return false;
     }
     if (!adminForm.apellido.trim()) {
-      setFormError('El apellido es requerido')
-      return false
+      setFormError("El apellido es requerido");
+      return false;
     }
     if (!adminForm.fechaNacimiento.trim()) {
-      setFormError('La fecha de nacimiento es requerida')
-      return false
+      setFormError("La fecha de nacimiento es requerida");
+      return false;
     }
     if (!adminForm.correo.trim()) {
-      setFormError('El correo es requerido')
-      return false
+      setFormError("El correo es requerido");
+      return false;
     }
     if (!adminForm.contrasenaHash.trim()) {
-      setFormError('La contraseña es requerida')
-      return false
+      setFormError("La contraseña es requerida");
+      return false;
     }
     if (!adminForm.direccion.trim()) {
-      setFormError('La dirección es requerida')
-      return false
+      setFormError("La dirección es requerida");
+      return false;
     }
-    return true
-  }
+    return true;
+  };
 
-  const { token } = useAuth()
+  const { token } = useAuth();
 
   const handleCrearAdmin = async () => {
-    if (!validar()) return
+    if (!validar()) return;
     if (!token) {
-      setFormError('No hay token de sesión. Inicia sesión nuevamente.')
-      return
+      setFormError("No hay token de sesión. Inicia sesión nuevamente.");
+      return;
     }
 
-    setSaving(true)
-    setFormError('')
+    setSaving(true);
+    setFormError("");
 
     try {
-      await apiFetch('/users/register-admin', {
-        method: 'POST',
+      await apiFetch("/users/register-admin", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(adminForm),
-      })
+      });
 
-      closeDialog()
+      closeDialog();
     } catch (e: any) {
-      setFormError(e.message ?? 'Error al crear el administrador')
+      setFormError(e.message ?? "Error al crear el administrador");
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -305,20 +305,20 @@ export default function AdminLibrosPage() {
             <Input
               label="DNI"
               value={adminForm.dni}
-              onChange={e => setF('dni', e.target.value)}
+              onChange={e => setF("dni", e.target.value)}
               placeholder="1234567890"
             />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input
                 label="Nombre"
                 value={adminForm.nombre}
-                onChange={e => setF('nombre', e.target.value)}
+                onChange={e => setF("nombre", e.target.value)}
                 placeholder="Juan"
               />
               <Input
                 label="Apellido"
                 value={adminForm.apellido}
-                onChange={e => setF('apellido', e.target.value)}
+                onChange={e => setF("apellido", e.target.value)}
                 placeholder="Pérez"
               />
             </div>
@@ -326,38 +326,38 @@ export default function AdminLibrosPage() {
               label="Fecha de nacimiento"
               type="date"
               value={adminForm.fechaNacimiento}
-              onChange={e => setF('fechaNacimiento', e.target.value)}
+              onChange={e => setF("fechaNacimiento", e.target.value)}
             />
             <Input
               label="Correo"
               type="email"
               value={adminForm.correo}
-              onChange={e => setF('correo', e.target.value)}
+              onChange={e => setF("correo", e.target.value)}
               placeholder="juan@email.com"
             />
             <Input
               label="Contraseña"
               type="password"
               value={adminForm.contrasenaHash}
-              onChange={e => setF('contrasenaHash', e.target.value)}
+              onChange={e => setF("contrasenaHash", e.target.value)}
               placeholder="********"
             />
             <Input
               label="Dirección"
               value={adminForm.direccion}
-              onChange={e => setF('direccion', e.target.value)}
+              onChange={e => setF("direccion", e.target.value)}
               placeholder="Calle 123"
             />
             <Input
               label="Teléfono"
               value={adminForm.telefono}
-              onChange={e => setF('telefono', e.target.value)}
+              onChange={e => setF("telefono", e.target.value)}
               placeholder="3001234567"
             />
             <Select
               label="Estado de cuenta"
-              value={adminForm.estadoCuenta ? 'true' : 'false'}
-              onChange={e => setF('estadoCuenta', e.target.value === 'true')}
+              value={adminForm.estadoCuenta ? "true" : "false"}
+              onChange={e => setF("estadoCuenta", e.target.value === "true")}
             >
               <option value="true">Activa</option>
               <option value="false">Inactiva</option>
@@ -375,11 +375,11 @@ export default function AdminLibrosPage() {
               disabled={saving}
               className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-60 transition-colors"
             >
-              {saving ? 'Creando...' : 'Crear administrador'}
+              {saving ? "Creando..." : "Crear administrador"}
             </button>
           </div>
         </Modal>
       )}
     </div>
-  )
+  );
 }

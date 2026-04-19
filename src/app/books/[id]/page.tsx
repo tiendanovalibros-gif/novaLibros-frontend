@@ -390,21 +390,22 @@ export default function BookDetailPage() {
     setError("");
     try {
       // Cargar datos básicos
-      const [libroData, autoresData, generosData, editorialesData, tiendasData, inventariosData] = await Promise.all([
-        apiFetch<Libro>(`/libros/${libroId}`),
-        apiFetch<Autor[]>("/autores"),
-        apiFetch<Genero[]>("/generos"),
-        apiFetch<Editorial[]>("/editoriales"),
-        apiFetch<TiendaLite[]>("/tiendas").catch(() => []),
-        apiFetch<InventarioLite[]>("/inventarios").catch(() => []),
-      ]);
+      const [libroData, autoresData, generosData, editorialesData, tiendasData, inventariosData] =
+        await Promise.all([
+          apiFetch<Libro>(`/libros/${libroId}`),
+          apiFetch<Autor[]>("/autores"),
+          apiFetch<Genero[]>("/generos"),
+          apiFetch<Editorial[]>("/editoriales"),
+          apiFetch<TiendaLite[]>("/tiendas").catch(() => []),
+          apiFetch<InventarioLite[]>("/inventarios").catch(() => []),
+        ]);
 
       setLibro(libroData);
       setAutores(autoresData);
       setGeneros(generosData);
       setEditoriales(editorialesData);
       setTiendas(tiendasData);
-      const inventariosDeEsteLibro = inventariosData.filter((i) => i.idLibro === libroData.id);
+      const inventariosDeEsteLibro = inventariosData.filter(i => i.idLibro === libroData.id);
       setInventariosLibro(inventariosDeEsteLibro);
       setIdTiendaStock(inventariosDeEsteLibro[0]?.idTienda ?? tiendasData[0]?.id ?? 0);
 
@@ -459,7 +460,7 @@ export default function BookDetailPage() {
     setStockError("");
     setStockMensaje("");
     try {
-      const inventarioExistente = inventariosLibro.find((i) => i.idTienda === idTiendaStock);
+      const inventarioExistente = inventariosLibro.find(i => i.idTienda === idTiendaStock);
 
       if (inventarioExistente) {
         if (tipoMovimientoStock === "sumar") {
@@ -483,11 +484,13 @@ export default function BookDetailPage() {
       }
 
       const inventariosData = await apiFetch<InventarioLite[]>("/inventarios");
-      setInventariosLibro(inventariosData.filter((i) => i.idLibro === libro.id));
+      setInventariosLibro(inventariosData.filter(i => i.idLibro === libro.id));
       setStockMensaje("Existencias actualizadas correctamente");
       setCantidadStock(1);
     } catch (e: unknown) {
-      setStockError((e as { message?: string })?.message ?? "No fue posible actualizar existencias");
+      setStockError(
+        (e as { message?: string })?.message ?? "No fue posible actualizar existencias"
+      );
     } finally {
       setGuardandoStock(false);
     }
@@ -627,18 +630,22 @@ export default function BookDetailPage() {
 
                   {inventariosLibro.length > 0 ? (
                     <div className="mt-3 space-y-1.5">
-                      {inventariosLibro.map((inv) => (
+                      {inventariosLibro.map(inv => (
                         <div
                           key={inv.id}
                           className="text-xs text-slate-600 flex items-center justify-between"
                         >
                           <span>{nombreTienda(inv.idTienda)}</span>
-                          <span className="font-semibold text-slate-800">{inv.cantidadDisponible}</span>
+                          <span className="font-semibold text-slate-800">
+                            {inv.cantidadDisponible}
+                          </span>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="mt-2 text-xs text-slate-500">Este libro no tiene inventario registrado.</p>
+                    <p className="mt-2 text-xs text-slate-500">
+                      Este libro no tiene inventario registrado.
+                    </p>
                   )}
                 </div>
 
@@ -733,14 +740,16 @@ export default function BookDetailPage() {
                 </p>
 
                 <div>
-                  <label className="block text-slate-700 text-sm font-semibold mb-1.5">Tienda</label>
+                  <label className="block text-slate-700 text-sm font-semibold mb-1.5">
+                    Tienda
+                  </label>
                   <select
                     value={idTiendaStock}
-                    onChange={(e) => setIdTiendaStock(Number(e.target.value))}
+                    onChange={e => setIdTiendaStock(Number(e.target.value))}
                     className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 outline-none focus:border-blue-500"
                   >
                     <option value={0}>Seleccionar tienda...</option>
-                    {tiendas.map((tienda) => (
+                    {tiendas.map(tienda => (
                       <option key={tienda.id} value={tienda.id}>
                         {tienda.nombre}
                       </option>
@@ -749,10 +758,12 @@ export default function BookDetailPage() {
                 </div>
 
                 <div>
-                  <label className="block text-slate-700 text-sm font-semibold mb-1.5">Acción</label>
+                  <label className="block text-slate-700 text-sm font-semibold mb-1.5">
+                    Acción
+                  </label>
                   <select
                     value={tipoMovimientoStock}
-                    onChange={(e) => setTipoMovimientoStock(e.target.value as "sumar" | "restar")}
+                    onChange={e => setTipoMovimientoStock(e.target.value as "sumar" | "restar")}
                     className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 outline-none focus:border-blue-500"
                   >
                     <option value="sumar">Sumar existencias</option>
@@ -762,20 +773,24 @@ export default function BookDetailPage() {
 
                 <div>
                   <label className="block text-slate-700 text-sm font-semibold mb-1.5">
-                    {tipoMovimientoStock === "sumar" ? "Cantidad a agregar" : "Cantidad a disminuir"}
+                    {tipoMovimientoStock === "sumar"
+                      ? "Cantidad a agregar"
+                      : "Cantidad a disminuir"}
                   </label>
                   <input
                     type="number"
                     min={1}
                     value={cantidadStock}
-                    onChange={(e) => setCantidadStock(Number(e.target.value) || 1)}
+                    onChange={e => setCantidadStock(Number(e.target.value) || 1)}
                     className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 outline-none focus:border-blue-500"
                   />
                 </div>
 
                 {idTiendaStock > 0 && (
                   <p className="text-xs text-slate-500">
-                    Existencias actuales en tienda: {inventariosLibro.find((i) => i.idTienda === idTiendaStock)?.cantidadDisponible ?? 0}
+                    Existencias actuales en tienda:{" "}
+                    {inventariosLibro.find(i => i.idTienda === idTiendaStock)?.cantidadDisponible ??
+                      0}
                   </p>
                 )}
 

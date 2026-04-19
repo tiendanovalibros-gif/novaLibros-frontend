@@ -308,7 +308,10 @@ export default function AdminLibrosPage() {
   const [loadingAgotadosAdmin, setLoadingAgotadosAdmin] = useState(false);
   const [agotadosError, setAgotadosError] = useState("");
   const [reposicionPorLibro, setReposicionPorLibro] = useState<
-    Record<string, { idTienda: number; cantidadAAgregar: number; tipoMovimiento: "sumar" | "restar" }>
+    Record<
+      string,
+      { idTienda: number; cantidadAAgregar: number; tipoMovimiento: "sumar" | "restar" }
+    >
   >({});
   const [savingReposicionLibroId, setSavingReposicionLibroId] = useState<string | null>(null);
 
@@ -444,7 +447,11 @@ export default function AdminLibrosPage() {
 
   const setReposicion = (
     idLibro: string,
-    patch: Partial<{ idTienda: number; cantidadAAgregar: number; tipoMovimiento: "sumar" | "restar" }>
+    patch: Partial<{
+      idTienda: number;
+      cantidadAAgregar: number;
+      tipoMovimiento: "sumar" | "restar";
+    }>
   ) => {
     setReposicionPorLibro(prev => {
       const actual = prev[idLibro] ?? { idTienda: 0, cantidadAAgregar: 1, tipoMovimiento: "sumar" };
@@ -478,7 +485,7 @@ export default function AdminLibrosPage() {
     setSavingReposicionLibroId(libro.idLibro);
     setAgotadosError("");
     try {
-      const inventarioTienda = libro.inventarios.find((inv) => inv.idTienda === reposicion.idTienda);
+      const inventarioTienda = libro.inventarios.find(inv => inv.idTienda === reposicion.idTienda);
 
       if (!inventarioTienda) {
         setAgotadosError("No existe inventario para ese libro en la tienda seleccionada");
@@ -500,11 +507,7 @@ export default function AdminLibrosPage() {
           return;
         }
 
-        await actualizarCantidadInventarioLibro(
-          reposicion.idTienda,
-          libro.idLibro,
-          nuevaCantidad
-        );
+        await actualizarCantidadInventarioLibro(reposicion.idTienda, libro.idLibro, nuevaCantidad);
       }
       await cargarAgotadosAdmin();
       await cargarDatos();
@@ -1200,16 +1203,19 @@ export default function AdminLibrosPage() {
                       disabled={savingReposicionLibroId === libro.idLibro}
                       className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-60"
                     >
-                      {savingReposicionLibroId === libro.idLibro ? "Guardando..." : "Actualizar existencias"}
+                      {savingReposicionLibroId === libro.idLibro
+                        ? "Guardando..."
+                        : "Actualizar existencias"}
                     </button>
                   </div>
 
                   <p className="mt-2 text-xs text-slate-500">
                     Existencias actuales en tienda:{" "}
                     {libro.inventarios.find(
-                      (inv) =>
+                      inv =>
                         inv.idTienda ===
-                        (reposicionPorLibro[libro.idLibro]?.idTienda ?? libro.inventarios[0]?.idTienda)
+                        (reposicionPorLibro[libro.idLibro]?.idTienda ??
+                          libro.inventarios[0]?.idTienda)
                     )?.cantidadDisponible ?? 0}
                   </p>
                 </div>
@@ -1221,11 +1227,16 @@ export default function AdminLibrosPage() {
                 </p>
 
                 {librosSinInventario.length === 0 ? (
-                  <p className="text-slate-500 text-sm">Todos los libros ya tienen inventario registrado.</p>
+                  <p className="text-slate-500 text-sm">
+                    Todos los libros ya tienen inventario registrado.
+                  </p>
                 ) : (
                   <div className="flex flex-col gap-3">
                     {librosSinInventario.map(libro => (
-                      <div key={libro.id} className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                      <div
+                        key={libro.id}
+                        className="p-3 bg-amber-50 border border-amber-200 rounded-xl"
+                      >
                         <div className="flex items-center justify-between gap-3">
                           <div>
                             <p className="text-slate-900 font-semibold text-sm">{libro.titulo}</p>
@@ -1233,13 +1244,17 @@ export default function AdminLibrosPage() {
                               {nombreAutor(libro.idAutor)} · {libro.isbn}
                             </p>
                           </div>
-                          <span className="text-xs font-semibold text-amber-700">Sin inventario</span>
+                          <span className="text-xs font-semibold text-amber-700">
+                            Sin inventario
+                          </span>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] gap-2 mt-3">
                           <select
                             value={reposicionPorLibro[libro.id]?.idTienda ?? tiendas[0]?.id ?? 0}
-                            onChange={e => setReposicion(libro.id, { idTienda: Number(e.target.value) })}
+                            onChange={e =>
+                              setReposicion(libro.id, { idTienda: Number(e.target.value) })
+                            }
                             className="px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-800"
                           >
                             <option value={0}>Seleccionar tienda</option>
@@ -1280,7 +1295,9 @@ export default function AdminLibrosPage() {
                             disabled={savingReposicionLibroId === libro.id}
                             className="px-3 py-2 bg-amber-600 text-white rounded-lg text-sm font-semibold hover:bg-amber-700 disabled:opacity-60"
                           >
-                            {savingReposicionLibroId === libro.id ? "Creando..." : "Crear inventario"}
+                            {savingReposicionLibroId === libro.id
+                              ? "Creando..."
+                              : "Crear inventario"}
                           </button>
                         </div>
                       </div>

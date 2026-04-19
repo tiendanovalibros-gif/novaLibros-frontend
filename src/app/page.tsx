@@ -216,10 +216,10 @@ const BookCard = ({
   const cartTooltip = estaAgotado
     ? "Sin existencias disponibles"
     : !isAuthenticated
-    ? "Inicia sesión para agregar al carrito"
-    : userRole === "cliente"
-      ? "Agregar al carrito"
-      : "Solo clientes pueden agregar al carrito";
+      ? "Inicia sesión para agregar al carrito"
+      : userRole === "cliente"
+        ? "Agregar al carrito"
+        : "Solo clientes pueden agregar al carrito";
 
   return (
     <a

@@ -1,9 +1,9 @@
-'use client'
+"use client";
 
-import { useEffect, useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { useAuth } from '@/context/auth.context'
-import MainNavbar from '@/components/navigation/main-navbar'
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/auth.context";
+import MainNavbar from "@/components/navigation/main-navbar";
 import {
   crearTienda,
   editarTienda,
@@ -12,47 +12,47 @@ import {
   type Tienda,
   validarDireccionTienda,
   type ValidateDireccionResponse,
-} from '@/services/tiendas.service'
+} from "@/services/tiendas.service";
 import {
   DEPARTAMENTOS_CIUDADES,
   DEPARTAMENTO_OTROS,
   encontrarDepartamentoPorCiudad,
   normalizeUbicacionTexto,
-} from '@/constants/colombia-locations.constants'
+} from "@/constants/colombia-locations.constants";
 
-type DialogMode = 'create' | 'edit' | 'delete' | null
+type DialogMode = "create" | "edit" | "delete" | null;
 
 interface FormTienda {
-  nombre: string
-  direccion: string
-  departamento: string
-  ciudad: string
+  nombre: string;
+  direccion: string;
+  departamento: string;
+  ciudad: string;
 }
 
 const EMPTY_FORM: FormTienda = {
-  nombre: '',
-  direccion: '',
-  departamento: '',
-  ciudad: '',
-}
+  nombre: "",
+  direccion: "",
+  departamento: "",
+  ciudad: "",
+};
 
 const DEPARTAMENTOS_ORDENADOS = Object.keys(DEPARTAMENTOS_CIUDADES).sort((a, b) =>
-  a.localeCompare(b, 'es', { sensitivity: 'base' })
-)
+  a.localeCompare(b, "es", { sensitivity: "base" })
+);
 
 const parseApiError = (error: unknown, fallback: string): string => {
-  if (typeof error === 'string') return error
+  if (typeof error === "string") return error;
 
-  if (error && typeof error === 'object' && 'message' in error) {
-    const message = (error as { message?: unknown }).message
-    if (typeof message === 'string') return message
+  if (error && typeof error === "object" && "message" in error) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === "string") return message;
     if (Array.isArray(message)) {
-      return message.filter(v => typeof v === 'string').join(' · ') || fallback
+      return message.filter(v => typeof v === "string").join(" · ") || fallback;
     }
   }
 
-  return fallback
-}
+  return fallback;
+};
 
 const PinIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
@@ -65,14 +65,30 @@ const PinIcon = () => (
     />
     <circle cx="12" cy="10" r="3" stroke="white" strokeWidth="2" />
   </svg>
-)
+);
 
 const PlusIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-    <line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    <line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    <line
+      x1="12"
+      y1="5"
+      x2="12"
+      y2="19"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+    />
+    <line
+      x1="5"
+      y1="12"
+      x2="19"
+      y2="12"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+    />
   </svg>
-)
+);
 
 const EditIcon = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
@@ -91,7 +107,7 @@ const EditIcon = () => (
       strokeLinejoin="round"
     />
   </svg>
-)
+);
 
 const TrashIcon = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
@@ -118,7 +134,7 @@ const TrashIcon = () => (
       strokeLinejoin="round"
     />
   </svg>
-)
+);
 
 const SearchIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -133,14 +149,30 @@ const SearchIcon = () => (
       strokeLinecap="round"
     />
   </svg>
-)
+);
 
 const CloseIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-    <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    <line
+      x1="18"
+      y1="6"
+      x2="6"
+      y2="18"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+    />
+    <line
+      x1="6"
+      y1="6"
+      x2="18"
+      y2="18"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+    />
   </svg>
-)
+);
 
 const Input = ({
   label,
@@ -153,14 +185,14 @@ const Input = ({
       className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors disabled:bg-slate-50 disabled:text-slate-500"
     />
   </div>
-)
+);
 
 const Select = ({
   label,
   children,
   ...props
 }: { label: string } & React.SelectHTMLAttributes<HTMLSelectElement> & {
-    children: React.ReactNode
+    children: React.ReactNode;
   }) => (
   <div>
     <label className="block text-slate-700 text-sm font-semibold mb-1.5">{label}</label>
@@ -171,16 +203,16 @@ const Select = ({
       {children}
     </select>
   </div>
-)
+);
 
 const Modal = ({
   title,
   onClose,
   children,
 }: {
-  title: string
-  onClose: () => void
-  children: React.ReactNode
+  title: string;
+  onClose: () => void;
+  children: React.ReactNode;
 }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
     <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
@@ -190,275 +222,277 @@ const Modal = ({
     >
       <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 sticky top-0 bg-white rounded-t-2xl z-10">
         <h3 className="text-slate-900 font-bold text-lg">{title}</h3>
-        <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors p-1">
+        <button
+          onClick={onClose}
+          className="text-slate-400 hover:text-slate-600 transition-colors p-1"
+        >
           <CloseIcon />
         </button>
       </div>
       <div className="p-6">{children}</div>
     </div>
   </div>
-)
+);
 
 export default function AdminTiendasPage() {
-  const { user, isAuthenticated, loading: authLoading } = useAuth()
-  const router = useRouter()
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const router = useRouter();
 
-  const [tiendas, setTiendas] = useState<Tienda[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [busqueda, setBusqueda] = useState('')
+  const [tiendas, setTiendas] = useState<Tienda[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [busqueda, setBusqueda] = useState("");
 
-  const [dialogMode, setDialogMode] = useState<DialogMode>(null)
-  const [tiendaActual, setTiendaActual] = useState<Tienda | null>(null)
-  const [form, setForm] = useState<FormTienda>(EMPTY_FORM)
-  const [formError, setFormError] = useState('')
-  const [saving, setSaving] = useState(false)
-  const [validatingAddress, setValidatingAddress] = useState(false)
-  const [validationResult, setValidationResult] = useState<ValidateDireccionResponse | null>(null)
+  const [dialogMode, setDialogMode] = useState<DialogMode>(null);
+  const [tiendaActual, setTiendaActual] = useState<Tienda | null>(null);
+  const [form, setForm] = useState<FormTienda>(EMPTY_FORM);
+  const [formError, setFormError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [validatingAddress, setValidatingAddress] = useState(false);
+  const [validationResult, setValidationResult] = useState<ValidateDireccionResponse | null>(null);
 
   const cargarTiendas = async () => {
-    setLoading(true)
-    setError('')
+    setLoading(true);
+    setError("");
 
     try {
-      const data = await listarTiendas()
-      setTiendas(data)
+      const data = await listarTiendas();
+      setTiendas(data);
     } catch (err) {
-      setError(parseApiError(err, 'Error al cargar tiendas'))
+      setError(parseApiError(err, "Error al cargar tiendas"));
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    if (authLoading) return
+    if (authLoading) return;
 
     if (!isAuthenticated) {
-      router.push('/login')
-      return
+      router.push("/login");
+      return;
     }
 
-    if (user && user.rol !== 'administrador') {
-      router.push('/')
-      return
+    if (user && user.rol !== "administrador") {
+      router.push("/");
+      return;
     }
 
-    cargarTiendas()
-  }, [authLoading, isAuthenticated, user, router])
+    cargarTiendas();
+  }, [authLoading, isAuthenticated, user, router]);
 
   const tiendasFiltradas = useMemo(() => {
-    const q = busqueda.trim().toLowerCase()
-    if (!q) return tiendas
+    const q = busqueda.trim().toLowerCase();
+    if (!q) return tiendas;
 
     return tiendas.filter(t => {
       const departamento = t.ciudad
-        ? encontrarDepartamentoPorCiudad(t.ciudad) ?? DEPARTAMENTO_OTROS
-        : ''
+        ? (encontrarDepartamentoPorCiudad(t.ciudad) ?? DEPARTAMENTO_OTROS)
+        : "";
 
       return (
         t.nombre.toLowerCase().includes(q) ||
         t.direccion.toLowerCase().includes(q) ||
-        (t.direccionNormalizada ?? '').toLowerCase().includes(q) ||
-        (t.ciudad ?? '').toLowerCase().includes(q) ||
+        (t.direccionNormalizada ?? "").toLowerCase().includes(q) ||
+        (t.ciudad ?? "").toLowerCase().includes(q) ||
         departamento.toLowerCase().includes(q)
-      )
-    })
-  }, [tiendas, busqueda])
+      );
+    });
+  }, [tiendas, busqueda]);
 
   const ciudadesSinDepartamento = useMemo(() => {
     const ciudades = tiendas
-      .map(tienda => tienda.ciudad?.trim() ?? '')
+      .map(tienda => tienda.ciudad?.trim() ?? "")
       .filter(Boolean)
-      .filter(ciudad => !encontrarDepartamentoPorCiudad(ciudad))
+      .filter(ciudad => !encontrarDepartamentoPorCiudad(ciudad));
 
     return Array.from(new Set(ciudades)).sort((a, b) =>
-      a.localeCompare(b, 'es', { sensitivity: 'base' })
-    )
-  }, [tiendas])
+      a.localeCompare(b, "es", { sensitivity: "base" })
+    );
+  }, [tiendas]);
 
   const ciudadesDisponibles = useMemo(() => {
     if (!form.departamento) {
-      return []
+      return [];
     }
 
     const base =
       form.departamento === DEPARTAMENTO_OTROS
         ? [...ciudadesSinDepartamento]
-        : [...(DEPARTAMENTOS_CIUDADES[form.departamento] ?? [])]
+        : [...(DEPARTAMENTOS_CIUDADES[form.departamento] ?? [])];
 
     if (
       form.ciudad &&
       !base.some(ciudad => normalizeUbicacionTexto(ciudad) === normalizeUbicacionTexto(form.ciudad))
     ) {
-      base.push(form.ciudad)
+      base.push(form.ciudad);
     }
 
-    return base.sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }))
-  }, [form.departamento, form.ciudad, ciudadesSinDepartamento])
+    return base.sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
+  }, [form.departamento, form.ciudad, ciudadesSinDepartamento]);
 
   const setF = (key: keyof FormTienda, value: string) => {
-    setForm(prev => ({ ...prev, [key]: value }))
-    setValidationResult(null)
-  }
+    setForm(prev => ({ ...prev, [key]: value }));
+    setValidationResult(null);
+  };
 
   const setDepartamento = (departamento: string) => {
     setForm(prev => ({
       ...prev,
       departamento,
-      ciudad: prev.departamento === departamento ? prev.ciudad : '',
-    }))
-    setValidationResult(null)
-  }
+      ciudad: prev.departamento === departamento ? prev.ciudad : "",
+    }));
+    setValidationResult(null);
+  };
 
   const cerrarDialogo = () => {
-    setDialogMode(null)
-    setTiendaActual(null)
-    setFormError('')
-    setValidationResult(null)
-  }
+    setDialogMode(null);
+    setTiendaActual(null);
+    setFormError("");
+    setValidationResult(null);
+  };
 
   const abrirCrear = () => {
-    setForm(EMPTY_FORM)
-    setFormError('')
-    setValidationResult(null)
-    setDialogMode('create')
-  }
+    setForm(EMPTY_FORM);
+    setFormError("");
+    setValidationResult(null);
+    setDialogMode("create");
+  };
 
   const abrirEditar = (tienda: Tienda) => {
     const departamentoDetectado = tienda.ciudad
       ? encontrarDepartamentoPorCiudad(tienda.ciudad)
-      : null
+      : null;
 
-    setTiendaActual(tienda)
+    setTiendaActual(tienda);
     setForm({
       nombre: tienda.nombre,
       direccion: tienda.direccion,
-      departamento:
-        departamentoDetectado ?? (tienda.ciudad ? DEPARTAMENTO_OTROS : ''),
-      ciudad: tienda.ciudad ?? '',
-    })
-    setFormError('')
-    setValidationResult(null)
-    setDialogMode('edit')
-  }
+      departamento: departamentoDetectado ?? (tienda.ciudad ? DEPARTAMENTO_OTROS : ""),
+      ciudad: tienda.ciudad ?? "",
+    });
+    setFormError("");
+    setValidationResult(null);
+    setDialogMode("edit");
+  };
 
   const abrirEliminar = (tienda: Tienda) => {
-    setTiendaActual(tienda)
-    setFormError('')
-    setDialogMode('delete')
-  }
+    setTiendaActual(tienda);
+    setFormError("");
+    setDialogMode("delete");
+  };
 
   const validarFormulario = (): boolean => {
     if (!form.nombre.trim()) {
-      setFormError('El nombre es obligatorio')
-      return false
+      setFormError("El nombre es obligatorio");
+      return false;
     }
 
     if (form.nombre.trim().length < 3) {
-      setFormError('El nombre debe tener al menos 3 caracteres')
-      return false
+      setFormError("El nombre debe tener al menos 3 caracteres");
+      return false;
     }
 
     if (!form.direccion.trim()) {
-      setFormError('La dirección es obligatoria')
-      return false
+      setFormError("La dirección es obligatoria");
+      return false;
     }
 
     if (!form.departamento.trim()) {
-      setFormError('El departamento es obligatorio')
-      return false
+      setFormError("El departamento es obligatorio");
+      return false;
     }
 
     if (!form.ciudad.trim()) {
-      setFormError('La ciudad es obligatoria')
-      return false
+      setFormError("La ciudad es obligatoria");
+      return false;
     }
 
-    return true
-  }
+    return true;
+  };
 
   const handleValidarDireccion = async () => {
     if (!form.direccion.trim() || !form.ciudad.trim()) {
-      setFormError('Ingresa dirección y ciudad para validar')
-      return
+      setFormError("Ingresa dirección y ciudad para validar");
+      return;
     }
 
-    setFormError('')
-    setValidatingAddress(true)
+    setFormError("");
+    setValidatingAddress(true);
 
     try {
       const result = await validarDireccionTienda({
         direccion: form.direccion.trim(),
         ciudad: form.ciudad.trim(),
-      })
-      setValidationResult(result)
+      });
+      setValidationResult(result);
     } catch (err) {
-      setValidationResult(null)
-      setFormError(parseApiError(err, 'No se pudo validar la dirección'))
+      setValidationResult(null);
+      setFormError(parseApiError(err, "No se pudo validar la dirección"));
     } finally {
-      setValidatingAddress(false)
+      setValidatingAddress(false);
     }
-  }
+  };
 
   const handleCrear = async () => {
-    if (!validarFormulario()) return
+    if (!validarFormulario()) return;
 
-    setSaving(true)
-    setFormError('')
+    setSaving(true);
+    setFormError("");
 
     try {
       const nueva = await crearTienda({
         nombre: form.nombre.trim(),
         direccion: form.direccion.trim(),
         ciudad: form.ciudad.trim(),
-      })
-      setTiendas(prev => [nueva, ...prev])
-      cerrarDialogo()
+      });
+      setTiendas(prev => [nueva, ...prev]);
+      cerrarDialogo();
     } catch (err) {
-      setFormError(parseApiError(err, 'Error al crear la tienda'))
+      setFormError(parseApiError(err, "Error al crear la tienda"));
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   const handleEditar = async () => {
-    if (!tiendaActual || !validarFormulario()) return
+    if (!tiendaActual || !validarFormulario()) return;
 
-    setSaving(true)
-    setFormError('')
+    setSaving(true);
+    setFormError("");
 
     try {
       const actualizada = await editarTienda(tiendaActual.id, {
         nombre: form.nombre.trim(),
         direccion: form.direccion.trim(),
         ciudad: form.ciudad.trim(),
-      })
+      });
 
-      setTiendas(prev => prev.map(t => (t.id === tiendaActual.id ? actualizada : t)))
-      cerrarDialogo()
+      setTiendas(prev => prev.map(t => (t.id === tiendaActual.id ? actualizada : t)));
+      cerrarDialogo();
     } catch (err) {
-      setFormError(parseApiError(err, 'Error al actualizar la tienda'))
+      setFormError(parseApiError(err, "Error al actualizar la tienda"));
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   const handleEliminar = async () => {
-    if (!tiendaActual) return
+    if (!tiendaActual) return;
 
-    setSaving(true)
-    setFormError('')
+    setSaving(true);
+    setFormError("");
 
     try {
-      await eliminarTienda(tiendaActual.id)
-      setTiendas(prev => prev.filter(t => t.id !== tiendaActual.id))
-      cerrarDialogo()
+      await eliminarTienda(tiendaActual.id);
+      setTiendas(prev => prev.filter(t => t.id !== tiendaActual.id));
+      cerrarDialogo();
     } catch (err) {
-      setFormError(parseApiError(err, 'Error al eliminar la tienda'))
+      setFormError(parseApiError(err, "Error al eliminar la tienda"));
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   const renderFormTienda = (readOnly = false) => (
     <div className="flex flex-col gap-4">
@@ -471,7 +505,7 @@ export default function AdminTiendasPage() {
       <Input
         label="Nombre *"
         value={form.nombre}
-        onChange={e => setF('nombre', e.target.value)}
+        onChange={e => setF("nombre", e.target.value)}
         placeholder="Tienda Centro"
         disabled={readOnly}
       />
@@ -479,7 +513,7 @@ export default function AdminTiendasPage() {
       <Input
         label="Dirección *"
         value={form.direccion}
-        onChange={e => setF('direccion', e.target.value)}
+        onChange={e => setF("direccion", e.target.value)}
         placeholder="Calle 23 # 13-45"
         disabled={readOnly}
       />
@@ -503,15 +537,15 @@ export default function AdminTiendasPage() {
         <Select
           label="Ciudad *"
           value={form.ciudad}
-          onChange={e => setF('ciudad', e.target.value)}
+          onChange={e => setF("ciudad", e.target.value)}
           disabled={readOnly || !form.departamento}
         >
           <option value="">
             {!form.departamento
-              ? 'Selecciona primero departamento'
+              ? "Selecciona primero departamento"
               : ciudadesDisponibles.length === 0
-                ? 'No hay ciudades disponibles'
-                : 'Seleccionar ciudad...'}
+                ? "No hay ciudades disponibles"
+                : "Seleccionar ciudad..."}
           </option>
           {ciudadesDisponibles.map(ciudad => (
             <option key={ciudad} value={ciudad}>
@@ -529,7 +563,7 @@ export default function AdminTiendasPage() {
             disabled={validatingAddress}
             className="px-4 py-2 border border-blue-300 bg-blue-50 text-blue-700 rounded-lg text-sm font-semibold hover:bg-blue-100 disabled:opacity-60 transition-colors"
           >
-            {validatingAddress ? 'Validando...' : 'Validar dirección'}
+            {validatingAddress ? "Validando..." : "Validar dirección"}
           </button>
           <span className="text-xs text-slate-500">
             Comprueba dirección + ciudad antes de guardar.
@@ -541,17 +575,23 @@ export default function AdminTiendasPage() {
         <div className="bg-emerald-50 border border-emerald-300 rounded-lg p-4 text-sm text-emerald-900">
           <p className="font-semibold">Dirección validada correctamente</p>
           <p className="mt-1">
-            Ciudad detectada: <span className="font-semibold">{validationResult.ciudadDetectada || 'No detectada'}</span>
+            Ciudad detectada:{" "}
+            <span className="font-semibold">
+              {validationResult.ciudadDetectada || "No detectada"}
+            </span>
           </p>
           <p className="mt-1">
-            Coordenadas: <span className="font-semibold">{validationResult.latitud}, {validationResult.longitud}</span>
+            Coordenadas:{" "}
+            <span className="font-semibold">
+              {validationResult.latitud}, {validationResult.longitud}
+            </span>
           </p>
           <p className="mt-1 break-all">Normalizada: {validationResult.direccionNormalizada}</p>
           <p className="mt-1 text-xs">Proveedor: {validationResult.proveedor}</p>
         </div>
       )}
     </div>
-  )
+  );
 
   if (authLoading) {
     return (
@@ -560,7 +600,7 @@ export default function AdminTiendasPage() {
           <p className="font-semibold mb-2">Cargando sesión...</p>
         </div>
       </div>
-    )
+    );
   }
 
   if (!isAuthenticated) {
@@ -573,10 +613,10 @@ export default function AdminTiendasPage() {
           </a>
         </div>
       </div>
-    )
+    );
   }
 
-  if (user && user.rol !== 'administrador') {
+  if (user && user.rol !== "administrador") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-100 text-slate-700">
         <div className="p-6 bg-white rounded-xl shadow-md text-center">
@@ -584,7 +624,7 @@ export default function AdminTiendasPage() {
           <p>Solo los administradores pueden acceder a esta sección.</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -665,15 +705,15 @@ export default function AdminTiendasPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-slate-200 bg-slate-50">
-                      {[
-                        'Nombre',
-                        'Departamento',
-                        'Ciudad',
-                        'Dirección',
-                        'Dirección normalizada',
-                        'Coordenadas',
-                        'Acciones',
-                      ].map(h => (
+                    {[
+                      "Nombre",
+                      "Departamento",
+                      "Ciudad",
+                      "Dirección",
+                      "Dirección normalizada",
+                      "Coordenadas",
+                      "Acciones",
+                    ].map(h => (
                       <th
                         key={h}
                         className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap"
@@ -691,15 +731,15 @@ export default function AdminTiendasPage() {
                       </td>
                       <td className="px-4 py-3 text-slate-900 text-sm font-semibold whitespace-nowrap">
                         {tienda.ciudad
-                          ? encontrarDepartamentoPorCiudad(tienda.ciudad) ?? DEPARTAMENTO_OTROS
-                          : 'Sin definir'}
+                          ? (encontrarDepartamentoPorCiudad(tienda.ciudad) ?? DEPARTAMENTO_OTROS)
+                          : "Sin definir"}
                       </td>
                       <td className="px-4 py-3 text-slate-600 text-sm whitespace-nowrap">
-                        {tienda.ciudad ?? 'Sin ciudad'}
+                        {tienda.ciudad ?? "Sin ciudad"}
                       </td>
                       <td className="px-4 py-3 text-slate-600 text-sm">{tienda.direccion}</td>
                       <td className="px-4 py-3 text-slate-500 text-xs max-w-[280px] break-words">
-                        {tienda.direccionNormalizada || '-'}
+                        {tienda.direccionNormalizada || "-"}
                       </td>
                       <td className="px-4 py-3 text-slate-500 text-xs whitespace-nowrap">
                         {tienda.latitud}, {tienda.longitud}
@@ -735,7 +775,7 @@ export default function AdminTiendasPage() {
         </div>
       </main>
 
-      {dialogMode === 'create' && (
+      {dialogMode === "create" && (
         <Modal title="Agregar tienda" onClose={cerrarDialogo}>
           {renderFormTienda()}
           <div className="flex gap-3 justify-end mt-6 pt-4 border-t border-slate-100">
@@ -750,13 +790,13 @@ export default function AdminTiendasPage() {
               disabled={saving}
               className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-60 transition-colors"
             >
-              {saving ? 'Guardando...' : 'Guardar tienda'}
+              {saving ? "Guardando..." : "Guardar tienda"}
             </button>
           </div>
         </Modal>
       )}
 
-      {dialogMode === 'edit' && tiendaActual && (
+      {dialogMode === "edit" && tiendaActual && (
         <Modal title={`Editar: ${tiendaActual.nombre}`} onClose={cerrarDialogo}>
           {renderFormTienda()}
           <div className="flex gap-3 justify-end mt-6 pt-4 border-t border-slate-100">
@@ -771,18 +811,19 @@ export default function AdminTiendasPage() {
               disabled={saving}
               className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-60 transition-colors"
             >
-              {saving ? 'Actualizando...' : 'Actualizar tienda'}
+              {saving ? "Actualizando..." : "Actualizar tienda"}
             </button>
           </div>
         </Modal>
       )}
 
-      {dialogMode === 'delete' && tiendaActual && (
+      {dialogMode === "delete" && tiendaActual && (
         <Modal title="Eliminar tienda" onClose={cerrarDialogo}>
           <div className="text-center py-3">
             <p className="text-slate-900 font-semibold">¿Eliminar esta tienda?</p>
             <p className="text-slate-500 text-sm mt-1">
-              Se eliminará <span className="font-semibold text-slate-700">{tiendaActual.nombre}</span>.
+              Se eliminará{" "}
+              <span className="font-semibold text-slate-700">{tiendaActual.nombre}</span>.
             </p>
             {formError && <p className="text-red-600 text-sm mt-3">{formError}</p>}
           </div>
@@ -799,11 +840,11 @@ export default function AdminTiendasPage() {
               disabled={saving}
               className="px-5 py-2 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 disabled:opacity-60 transition-colors"
             >
-              {saving ? 'Eliminando...' : 'Eliminar'}
+              {saving ? "Eliminando..." : "Eliminar"}
             </button>
           </div>
         </Modal>
       )}
     </div>
-  )
+  );
 }
