@@ -9,9 +9,12 @@ import {
   actualizarCantidadInventarioLibro,
   crearInventarioLibro,
 } from "@/services/inventarios.service";
+import { crearReserva } from "@/services/reservas.service";
+import { agregarLibroAMiCarrito } from "@/services/carrito.service";
 import Iconify from "@/components/iconify/iconify";
 import MainNavbar from "@/components/navigation/main-navbar";
 import StockManagerModal from "@/components/inventarios/stock-manager-modal";
+import AddToCartDialog from "@/components/carrito/add-to-cart-dialog";
 import Link from "next/link";
 
 // ─── Tipos de la API ──────────────────────────────────────────────────────────
@@ -71,61 +74,6 @@ const generarColorPortada = (titulo: string) => {
 const generarLetraPortada = (titulo: string) => {
   return titulo.charAt(0).toUpperCase();
 };
-
-const MenuIcon = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-    <line
-      x1="3"
-      y1="6"
-      x2="21"
-      y2="6"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-    />
-    <line
-      x1="3"
-      y1="12"
-      x2="21"
-      y2="12"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-    />
-    <line
-      x1="3"
-      y1="18"
-      x2="21"
-      y2="18"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-    />
-  </svg>
-);
-
-const CloseIcon = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-    <line
-      x1="18"
-      y1="6"
-      x2="6"
-      y2="18"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-    />
-    <line
-      x1="6"
-      y1="6"
-      x2="18"
-      y2="18"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-    />
-  </svg>
-);
 
 // ─── Portada con imagen o placeholder ──────────────────────────────────────────
 const BookCover = ({ libro, big = false }: { libro: Libro; big?: boolean }) => {
@@ -205,133 +153,6 @@ const BookCover = ({ libro, big = false }: { libro: Libro; big?: boolean }) => {
   );
 };
 
-// ─── Navbar ───────────────────────────────────────────────────────────────────
-const Navbar = () => {
-  const [menuAbierto, setMenuAbierto] = useState(false);
-  const { user, isAuthenticated, logout } = useAuth();
-
-  return (
-    <nav className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center shrink-0">
-            <Iconify icon="solar:book-2-bold" className="text-white" width={24} />
-          </div>
-          <span className="text-slate-900 text-xl font-bold tracking-tight">NovaLibros</span>
-        </Link>
-        <div className="hidden sm:flex items-center gap-3">
-          {isAuthenticated ? (
-            <>
-              {user?.rol === "root" || user?.rol === "administrador" ? (
-                <a
-                  href="/admin"
-                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 hover:bg-slate-50 transition-colors"
-                >
-                  Dashboard Admin
-                </a>
-              ) : (
-                <a
-                  href="/carrito"
-                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 hover:bg-slate-50 transition-colors"
-                >
-                  Carrito
-                </a>
-              )}
-
-              <Link
-                href="/profile"
-                className="px-3 py-2 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 hover:bg-slate-50 transition-colors"
-              >
-                Mi perfil
-              </Link>
-
-              <button
-                onClick={() => void logout()}
-                className="px-3 py-2 bg-red-100 text-red-700 rounded-lg text-sm font-semibold hover:bg-red-200 transition-colors"
-              >
-                Cerrar sesión
-              </button>
-            </>
-          ) : (
-            <>
-              <a
-                href="/login"
-                className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 hover:bg-slate-50 transition-colors"
-              >
-                Iniciar sesión
-              </a>
-              <a
-                href="/register"
-                className="px-4 py-2 bg-blue-600 rounded-lg text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
-              >
-                Registrarse
-              </a>
-            </>
-          )}
-        </div>
-        <button
-          className="sm:hidden text-slate-700 p-1"
-          onClick={() => setMenuAbierto(!menuAbierto)}
-        >
-          {menuAbierto ? <CloseIcon /> : <MenuIcon />}
-        </button>
-      </div>
-      {menuAbierto && (
-        <div className="sm:hidden bg-white border-t border-slate-100 px-4 py-4 flex flex-col gap-3">
-          {isAuthenticated ? (
-            <>
-              {user?.rol === "root" || user?.rol === "administrador" ? (
-                <a
-                  href="/admin"
-                  className="w-full text-center py-2.5 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800"
-                >
-                  Dashboard Admin
-                </a>
-              ) : (
-                <a
-                  href="/carrito"
-                  className="w-full text-center py-2.5 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800"
-                >
-                  Carrito
-                </a>
-              )}
-
-              <Link
-                href="/profile"
-                className="w-full text-center py-2.5 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800"
-              >
-                Mi perfil
-              </Link>
-
-              <button
-                onClick={() => void logout()}
-                className="w-full text-center py-2.5 bg-red-100 text-red-700 rounded-lg font-semibold"
-              >
-                Cerrar sesión
-              </button>
-            </>
-          ) : (
-            <>
-              <a
-                href="/login"
-                className="w-full text-center py-2.5 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800"
-              >
-                Iniciar sesión
-              </a>
-              <a
-                href="/register"
-                className="w-full text-center py-2.5 bg-blue-600 rounded-lg text-sm font-semibold text-white"
-              >
-                Registrarse
-              </a>
-            </>
-          )}
-        </div>
-      )}
-    </nav>
-  );
-};
-
 // ─── Tarjeta relacionado ──────────────────────────────────────────────────────
 const RelatedCard = ({ libro }: { libro: Libro }) => (
   <a
@@ -356,6 +177,7 @@ export default function BookDetailPage() {
   const libroId = params.id as string;
   const { user } = useAuth();
   const esAdmin = user?.rol === "administrador" || user?.rol === "root";
+  const esCliente = user?.rol === "cliente";
 
   const [libro, setLibro] = useState<Libro | null>(null);
   const [autores, setAutores] = useState<Autor[]>([]);
@@ -366,8 +188,14 @@ export default function BookDetailPage() {
   const [librosRelacionados, setLibrosRelacionados] = useState<Libro[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showReservaConfirmModal, setShowReservaConfirmModal] = useState(false);
+  const [showCarritoConfirmModal, setShowCarritoConfirmModal] = useState(false);
   const [reservando, setReservando] = useState(false);
+  const [reservaMensaje, setReservaMensaje] = useState("");
+  const [reservaError, setReservaError] = useState("");
   const [agregando, setAgregando] = useState(false);
+  const [carritoMensaje, setCarritoMensaje] = useState("");
+  const [carritoError, setCarritoError] = useState("");
   const [showStockModal, setShowStockModal] = useState(false);
   const [idTiendaStock, setIdTiendaStock] = useState<number>(0);
   const [cantidadStock, setCantidadStock] = useState<number>(1);
@@ -434,16 +262,53 @@ export default function BookDetailPage() {
   const nombreTienda = (id: number) => tiendas.find(t => t.id === id)?.nombre ?? `Tienda #${id}`;
   const totalExistencias = inventariosLibro.reduce((acc, inv) => acc + inv.cantidadDisponible, 0);
 
-  const handleReservar = () => {
+  const handleConfirmarReserva = async () => {
+    if (!libro) return;
+
     setReservando(true);
-    setTimeout(() => setReservando(false), 1500);
-    // TODO: conectar con reservas.service.ts
+    setReservaError("");
+    setReservaMensaje("");
+
+    try {
+      const reserva = await crearReserva({
+        idLibro: libro.id,
+        cantidad: 1,
+      });
+
+      setReservaMensaje(
+        `Reserva creada. Expira el ${new Date(reserva.horaExpiracion).toLocaleString("es-CO")}`
+      );
+      setShowReservaConfirmModal(false);
+      await cargarDatos();
+    } catch (e: unknown) {
+      setReservaError((e as { message?: string })?.message ?? "No se pudo crear la reserva");
+    } finally {
+      setReservando(false);
+    }
   };
 
-  const handleAgregar = () => {
+  const handleConfirmarAgregarCarrito = async (cantidad: number) => {
+    if (!libro) return;
+
     setAgregando(true);
-    setTimeout(() => setAgregando(false), 1500);
-    // TODO: conectar con carrito.service.ts
+    setCarritoError("");
+    setCarritoMensaje("");
+
+    try {
+      await agregarLibroAMiCarrito({
+        idLibro: libro.id,
+        cantidad,
+      });
+
+      setCarritoMensaje(`Se agregaron ${cantidad} unidad(es) al carrito: ${libro.titulo}`);
+      setShowCarritoConfirmModal(false);
+    } catch (e: unknown) {
+      setCarritoError(
+        (e as { message?: string })?.message ?? "No se pudo agregar el libro al carrito"
+      );
+    } finally {
+      setAgregando(false);
+    }
   };
 
   const handleGuardarExistencias = async () => {
@@ -680,8 +545,8 @@ export default function BookDetailPage() {
 
                     {/* Reservar */}
                     <button
-                      onClick={handleReservar}
-                      disabled={reservando}
+                      onClick={() => setShowReservaConfirmModal(true)}
+                      disabled={reservando || !esCliente}
                       className="flex items-center justify-center gap-2 px-5 py-2.5 border-2 border-blue-600 text-blue-600 rounded-xl text-sm font-semibold hover:bg-blue-50 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
                     >
                       <Iconify icon="material-symbols:bookmark-outline" width={22} />
@@ -690,8 +555,8 @@ export default function BookDetailPage() {
 
                     {/* Agregar al carrito */}
                     <button
-                      onClick={handleAgregar}
-                      disabled={agregando}
+                      onClick={() => setShowCarritoConfirmModal(true)}
+                      disabled={agregando || !esCliente}
                       className="flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
                     >
                       <Iconify
@@ -703,6 +568,30 @@ export default function BookDetailPage() {
                     </button>
                   </div>
                 </div>
+
+                {reservaError && (
+                  <div className="mt-3 bg-red-50 border border-red-200 rounded-xl p-3 text-red-700 text-sm">
+                    {reservaError}
+                  </div>
+                )}
+
+                {reservaMensaje && (
+                  <div className="mt-3 bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-emerald-700 text-sm">
+                    {reservaMensaje}
+                  </div>
+                )}
+
+                {carritoError && (
+                  <div className="mt-3 bg-red-50 border border-red-200 rounded-xl p-3 text-red-700 text-sm">
+                    {carritoError}
+                  </div>
+                )}
+
+                {carritoMensaje && (
+                  <div className="mt-3 bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-emerald-700 text-sm">
+                    {carritoMensaje}
+                  </div>
+                )}
 
                 {/* Aviso visitante */}
                 <div className="mt-4 bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-start gap-2">
@@ -738,6 +627,66 @@ export default function BookDetailPage() {
           onChangeCantidad={setCantidadStock}
           onChangeTipoMovimiento={setTipoMovimientoStock}
           onSubmit={handleGuardarExistencias}
+        />
+
+        {showReservaConfirmModal && (
+          <div className="fixed inset-0 z-[70] bg-slate-900/55 backdrop-blur-[2px] flex items-end sm:items-center justify-center p-0 sm:p-6">
+            <div className="w-full sm:max-w-md bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+              <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                    <Iconify icon="solar:book-2-bold" className="text-white" width={20} />
+                  </div>
+                  <span className="text-slate-900 text-sm font-bold tracking-tight">
+                    NovaLibros
+                  </span>
+                </div>
+                <button
+                  onClick={() => setShowReservaConfirmModal(false)}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-300 text-slate-600 leading-none hover:bg-slate-100"
+                  aria-label="Cerrar"
+                >
+                  <Iconify icon="mdi:close" width={18} />
+                </button>
+              </div>
+
+              <div className="p-5 space-y-3">
+                <h3 className="text-slate-900 text-lg font-bold">Confirmar reserva</h3>
+                <p className="text-slate-600 text-sm">
+                  Estás a punto de reservar:{" "}
+                  <span className="font-semibold text-slate-900">{libro.titulo}</span>
+                </p>
+                <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-amber-800 text-sm">
+                  Tu reserva expirará en 24 horas. Si no se completa, el libro se liberará
+                  automáticamente.
+                </div>
+
+                <div className="pt-2 flex items-center justify-end gap-3">
+                  <button
+                    onClick={() => setShowReservaConfirmModal(false)}
+                    className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleConfirmarReserva}
+                    disabled={reservando}
+                    className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-60"
+                  >
+                    {reservando ? "Reservando..." : "Reservar"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <AddToCartDialog
+          isOpen={showCarritoConfirmModal}
+          libroTitulo={libro.titulo}
+          isLoading={agregando}
+          onClose={() => setShowCarritoConfirmModal(false)}
+          onConfirm={handleConfirmarAgregarCarrito}
         />
 
         {/* ── Libros relacionados ── */}

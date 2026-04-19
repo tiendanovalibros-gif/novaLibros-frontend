@@ -104,6 +104,14 @@ export default function MainNavbar() {
         </Link>
 
         <div className="hidden sm:flex items-center gap-3">
+          <Link
+            href="/tiendas"
+            className="px-3 py-2 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-100 transition-colors"
+            title="Ver tiendas"
+          >
+            Tiendas
+          </Link>
+
           {isAuthenticated ? (
             <>
               {user?.rol === "administrador" || user?.rol === "root" ? (
@@ -214,6 +222,13 @@ export default function MainNavbar() {
 
       {menuAbierto && (
         <div className="sm:hidden bg-white border-t border-slate-100 px-4 py-4 flex flex-col gap-3">
+          <Link
+            href="/tiendas"
+            className="w-full text-center py-2.5 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800"
+          >
+            Tiendas
+          </Link>
+
           {isAuthenticated ? (
             <>
               {user?.rol === "root" || user?.rol === "administrador" ? (

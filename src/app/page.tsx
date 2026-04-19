@@ -3,10 +3,12 @@
 import { useState, useEffect, useMemo } from "react";
 import { apiFetch } from "@/services/api.client";
 import { obtenerLibrosAgotados } from "@/services/inventarios.service";
+import { agregarLibroAMiCarrito } from "@/services/carrito.service";
 import { useAuth } from "@/context/auth.context";
 import Link from "next/link";
 import Iconify from "@/components/iconify/iconify";
 import MainNavbar from "@/components/navigation/main-navbar";
+import AddToCartDialog from "@/components/carrito/add-to-cart-dialog";
 import type { LibroAgotado } from "@/types/inventarios.types";
 
 // ─── Tipos de la API ──────────────────────────────────────────────────────────
@@ -202,6 +204,7 @@ const BookCard = ({
   userRole,
   estadoVisual,
   cantidadDisponible,
+  onRequestAddToCart,
 }: {
   libro: Libro;
   nombreAutor: (id: number) => string;
@@ -210,6 +213,7 @@ const BookCard = ({
   userRole: UserRole;
   estadoVisual: string;
   cantidadDisponible: number;
+  onRequestAddToCart: (libro: Libro) => void;
 }) => {
   const estaAgotado = estadoVisual === "agotado";
   const canAddToCart = isAuthenticated && userRole === "cliente" && !estaAgotado;
@@ -263,8 +267,7 @@ const BookCard = ({
             onClick={e => {
               e.preventDefault();
               if (!canAddToCart) return;
-              // TODO: implementar lógica real para agregar al carrito
-              alert(`Agregaste al carrito: ${libro.titulo}`);
+              onRequestAddToCart(libro);
             }}
           >
             <Iconify icon="icon-park-outline:mall-bag" className="text-slate-300" width={18} />
@@ -293,6 +296,11 @@ export default function CataloguePage() {
   const [rangoIdx, setRangoIdx] = useState(0);
   const [orden, setOrden] = useState("relevancia");
   const [showAgotadosDialog, setShowAgotadosDialog] = useState(false);
+  const [showCarritoDialog, setShowCarritoDialog] = useState(false);
+  const [libroCarritoActual, setLibroCarritoActual] = useState<Libro | null>(null);
+  const [agregandoCarrito, setAgregandoCarrito] = useState(false);
+  const [carritoMensaje, setCarritoMensaje] = useState("");
+  const [carritoError, setCarritoError] = useState("");
 
   const { user, isAuthenticated } = useAuth();
 
@@ -415,6 +423,38 @@ export default function CataloguePage() {
     e.preventDefault();
     setBusqueda(inputBusqueda);
   };
+
+  const handleOpenAddToCartDialog = (libro: Libro) => {
+    setCarritoError("");
+    setCarritoMensaje("");
+    setLibroCarritoActual(libro);
+    setShowCarritoDialog(true);
+  };
+
+  const handleConfirmAddToCart = async (cantidad: number) => {
+    if (!libroCarritoActual) return;
+
+    setAgregandoCarrito(true);
+    setCarritoError("");
+    setCarritoMensaje("");
+
+    try {
+      await agregarLibroAMiCarrito({
+        idLibro: libroCarritoActual.id,
+        cantidad,
+      });
+
+      setCarritoMensaje(
+        `Se agregaron ${cantidad} unidad(es) al carrito: ${libroCarritoActual.titulo}`
+      );
+      setShowCarritoDialog(false);
+    } catch (e: unknown) {
+      setCarritoError((e as { message?: string })?.message ?? "No se pudo agregar al carrito");
+    } finally {
+      setAgregandoCarrito(false);
+    }
+  };
+
   const clearFilters = () => {
     setBusqueda("");
     setInputBusqueda("");
@@ -597,6 +637,7 @@ export default function CataloguePage() {
                 userRole={user?.rol ?? null}
                 estadoVisual={estadoVisualLibro(libro)}
                 cantidadDisponible={cantidadDisponibleLibro(libro.id)}
+                onRequestAddToCart={handleOpenAddToCartDialog}
               />
             ))}
           </div>
@@ -611,6 +652,18 @@ export default function CataloguePage() {
             >
               Ver todos los libros
             </button>
+          </div>
+        )}
+
+        {carritoError && (
+          <div className="mt-4 bg-red-50 border border-red-200 rounded-xl p-3 text-red-700 text-sm">
+            {carritoError}
+          </div>
+        )}
+
+        {carritoMensaje && (
+          <div className="mt-4 bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-emerald-700 text-sm">
+            {carritoMensaje}
           </div>
         )}
 
@@ -712,6 +765,14 @@ export default function CataloguePage() {
           )}
         </Modal>
       )}
+
+      <AddToCartDialog
+        isOpen={showCarritoDialog}
+        libroTitulo={libroCarritoActual?.titulo ?? ""}
+        isLoading={agregandoCarrito}
+        onClose={() => setShowCarritoDialog(false)}
+        onConfirm={handleConfirmAddToCart}
+      />
 
       {/* ── Footer ── */}
       <footer className="bg-slate-800 border-t border-slate-700 mt-auto">
