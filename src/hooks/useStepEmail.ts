@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { forgotPassword } from "@/services/auth.service";
 
 export function useStepEmail(onNext: (email: string) => void) {
   const [email, setEmail] = useState("");
@@ -19,9 +20,10 @@ export function useStepEmail(onNext: (email: string) => void) {
     }
     setLoading(true);
     try {
-      // TODO: await forgotPassword(email) desde auth.service.ts
-      await new Promise(r => setTimeout(r, 1200));
+      await forgotPassword(email);
       onNext(email);
+    } catch {
+      setError("Ocurrió un error. Inténtalo de nuevo.");
     } finally {
       setLoading(false);
     }

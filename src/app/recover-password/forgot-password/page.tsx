@@ -5,12 +5,15 @@ import BannerCard from "@/components/authCard";
 import Iconify from "@/components/iconify/iconify";
 import { useRouter } from "next/navigation";
 import { useStepEmail } from "@/hooks/useStepEmail";
+import { forgotPassword } from "@/services/auth.service";
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
   const [emailSent, setEmailSent] = useState(false);
   const [savedEmail, setSavedEmail] = useState("");
   const [countdown, setCountdown] = useState(0);
+  const [resendError, setResendError] = useState("");
+  const [resendLoading, setResendLoading] = useState(false);
 
   useEffect(() => {
     if (countdown > 0) {
@@ -26,11 +29,17 @@ export default function ForgotPasswordPage() {
   });
 
   const handleResend = async () => {
-    if (countdown > 0) return;
-
-    // Simular reenvío - aquí se conectaría con el servicio real
-    setCountdown(60);
-    // TODO: llamar al servicio de forgot-password nuevamente
+    if (countdown > 0 || !savedEmail || resendLoading) return;
+    setResendError("");
+    setResendLoading(true);
+    try {
+      await forgotPassword(savedEmail);
+      setCountdown(60);
+    } catch {
+      setResendError("No se pudo reenviar el correo. Intentalo de nuevo.");
+    } finally {
+      setResendLoading(false);
+    }
   };
 
   const handleBackToLogin = () => {
@@ -138,11 +147,15 @@ export default function ForgotPasswordPage() {
                     <button
                       type="button"
                       onClick={handleResend}
-                      className="font-semibold text-blue-600 transition-colors hover:text-blue-700"
+                      disabled={resendLoading}
+                      className="font-semibold text-blue-600 transition-colors hover:text-blue-700 disabled:cursor-not-allowed disabled:text-blue-300"
                     >
-                      Reenviar correo
+                      {resendLoading ? "Reenviando..." : "Reenviar correo"}
                     </button>
                   </p>
+                )}
+                {resendError && (
+                  <p className="mt-3 text-[13px] text-red-600">{resendError}</p>
                 )}
               </div>
             </>

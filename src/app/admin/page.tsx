@@ -699,9 +699,17 @@ export default function AdminLibrosPage() {
               </span>
             </div>
           </div>
-          <a href="/" className="text-slate-500 text-sm hover:text-blue-600 transition-colors">
-            Ver catálogo →
-          </a>
+          <div className="flex items-center gap-4">
+            <a
+              href="/admin/tiendas"
+              className="text-slate-500 text-sm hover:text-blue-600 transition-colors"
+            >
+              Gestionar tiendas
+            </a>
+            <a href="/" className="text-slate-500 text-sm hover:text-blue-600 transition-colors">
+              Ver catálogo →
+            </a>
+          </div>
         </div>
       </nav>
 
@@ -712,6 +720,12 @@ export default function AdminLibrosPage() {
             <p className="text-slate-500 text-sm mt-0.5">Administra el catálogo de NovaLibros</p>
           </div>
           <div className="flex gap-3">
+            <a
+              href="/admin/tiendas"
+              className="flex items-center gap-2 px-4 py-2 border border-slate-300 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+            >
+              Ir a tiendas
+            </a>
             <button
               onClick={() => setShowAgotados(true)}
               className="flex items-center gap-2 px-4 py-2 border border-slate-300 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
