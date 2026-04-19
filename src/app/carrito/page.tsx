@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import MainNavbar from "@/components/navigation/main-navbar";
 import { useAuth } from "@/context/auth.context";
+import { apiFetch } from "@/services/api.client";
 import {
   actualizarCantidadLibroMiCarrito,
   obtenerMiCarrito,
@@ -24,12 +25,26 @@ export default function CarritoPage() {
   const [accionMensaje, setAccionMensaje] = useState("");
   const [carrito, setCarrito] = useState<CarritoResponse | null>(null);
   const [reservas, setReservas] = useState<ReservaResponse[]>([]);
+  const [inventarios, setInventarios] = useState<
+    Array<{ idLibro: string; cantidadDisponible: number }>
+  >([]);
   const [eliminandoDetalleId, setEliminandoDetalleId] = useState<number | null>(null);
   const [actualizandoCantidadId, setActualizandoCantidadId] = useState<number | null>(null);
   const [cancelandoReservaId, setCancelandoReservaId] = useState<string | null>(null);
   const [convirtiendoReservaId, setConvirtiendoReservaId] = useState<string | null>(null);
 
   const esCliente = user?.rol === "cliente";
+
+  useEffect(() => {
+    if (!error && !accionMensaje) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setError("");
+      setAccionMensaje("");
+    }, 4000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [error, accionMensaje]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -43,12 +58,16 @@ export default function CarritoPage() {
       setLoading(true);
       setError("");
       try {
-        const [carritoData, reservasData] = await Promise.all([
+        const [carritoData, reservasData, inventariosData] = await Promise.all([
           obtenerMiCarrito(),
           obtenerMisReservas(),
+          apiFetch<Array<{ idLibro: string; cantidadDisponible: number }>>("/inventarios").catch(
+            () => []
+          ),
         ]);
         setCarrito(carritoData);
         setReservas(reservasData.filter(r => r.estado === "activa"));
+        setInventarios(inventariosData);
       } catch (e: unknown) {
         setError((e as { message?: string })?.message ?? "No se pudo cargar tu carrito");
       } finally {
@@ -59,7 +78,7 @@ export default function CarritoPage() {
     void cargarData();
   }, [authLoading, isAuthenticated, esCliente]);
 
-  const totalCarrito = useMemo(() => {
+  const subtotalCarrito = useMemo(() => {
     if (!carrito) return 0;
     return carrito.detalles.reduce(
       (acc, item) => acc + Number(item.precioUnitario) * item.cantidad,
@@ -67,10 +86,28 @@ export default function CarritoPage() {
     );
   }, [carrito]);
 
-  const totalUnidadesCarrito = useMemo(() => {
+  const unidadesCarrito = useMemo(() => {
     if (!carrito) return 0;
     return carrito.detalles.reduce((acc, item) => acc + item.cantidad, 0);
   }, [carrito]);
+
+  const cantidadEnCarritoPorLibro = useMemo(() => {
+    const resumen = new Map<string, number>();
+    for (const item of carrito?.detalles ?? []) {
+      const actual = resumen.get(item.idLibro) ?? 0;
+      resumen.set(item.idLibro, actual + item.cantidad);
+    }
+    return resumen;
+  }, [carrito]);
+
+  const existenciasPorLibro = useMemo(() => {
+    const resumen = new Map<string, number>();
+    for (const inventario of inventarios) {
+      const actual = resumen.get(inventario.idLibro) ?? 0;
+      resumen.set(inventario.idLibro, actual + inventario.cantidadDisponible);
+    }
+    return resumen;
+  }, [inventarios]);
 
   const getBookCoverUrl = (imagenPortada?: string | null) => {
     if (!imagenPortada) return null;
@@ -186,35 +223,31 @@ export default function CarritoPage() {
     <div className="min-h-screen bg-slate-50">
       <MainNavbar />
 
+      {(error || accionMensaje) && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 w-full max-w-md pointer-events-none">
+          <div
+            className={`rounded-xl p-3 text-sm shadow-lg border pointer-events-auto ${
+              error
+                ? "bg-red-50 border-red-200 text-red-700"
+                : "bg-emerald-50 border-emerald-200 text-emerald-700"
+            }`}
+          >
+            {error || accionMensaje}
+          </div>
+        </div>
+      )}
+
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-red-700 text-sm">
-            {error}
-          </div>
-        )}
-
-        {accionMensaje && (
-          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-emerald-700 text-sm">
-            {accionMensaje}
-          </div>
-        )}
-
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-6 items-start">
           <section className="space-y-6">
             <section className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-slate-900 font-bold">Libros en carrito</h2>
-                <span className="text-sm text-slate-500">
-                  {carrito?.detalles.length ?? 0} item(s)
-                </span>
-              </div>
-
               {!carrito || carrito.detalles.length === 0 ? (
                 <p className="text-slate-500 text-sm">Aún no has agregado libros al carrito.</p>
               ) : (
                 <div className="space-y-3">
                   {carrito.detalles.map(item => {
                     const coverUrl = getBookCoverUrl(item.libro.imagenPortada);
+                    const existenciasDisponibles = existenciasPorLibro.get(item.idLibro) ?? 0;
                     return (
                       <div
                         key={item.id}
@@ -283,6 +316,9 @@ export default function CarritoPage() {
                           <p className="text-slate-600 text-xs mt-0.5">
                             ${Number(item.precioUnitario).toLocaleString("es-CO")} c/u
                           </p>
+                          <p className="text-xs mt-0.5 text-slate-600">
+                            Existencias disponibles: {existenciasDisponibles}
+                          </p>
 
                           <div className="mt-auto pt-3 flex justify-end">
                             <button
@@ -315,6 +351,8 @@ export default function CarritoPage() {
                     reserva.itemsReserva.map(item => {
                       const coverUrl = getBookCoverUrl(item.libro?.imagenPortada);
                       const titulo = item.libro?.titulo ?? item.idLibro;
+                      const cantidadEnCarrito = cantidadEnCarritoPorLibro.get(item.idLibro) ?? 0;
+                      const yaEnCarritoConCantidadSuficiente = cantidadEnCarrito >= item.cantidad;
 
                       return (
                         <div
@@ -351,19 +389,27 @@ export default function CarritoPage() {
                             <p className="text-slate-600 text-xs mt-0.5">
                               Reservados: {item.cantidad}
                             </p>
+                            {yaEnCarritoConCantidadSuficiente && (
+                              <p className="text-emerald-700 text-xs mt-0.5 font-semibold">
+                                Ya está en tu carrito con cantidad igual o superior.
+                              </p>
+                            )}
 
                             <div className="mt-auto pt-3 flex items-center justify-end gap-2">
                               <button
                                 onClick={() => void handleConvertirReservaACarrito(reserva.id)}
                                 disabled={
+                                  yaEnCarritoConCantidadSuficiente ||
                                   convirtiendoReservaId === reserva.id ||
                                   cancelandoReservaId === reserva.id
                                 }
                                 className="px-3 py-1.5 rounded-lg border border-blue-200 text-blue-700 text-xs font-semibold hover:bg-blue-50 disabled:opacity-60 disabled:cursor-not-allowed"
                               >
-                                {convirtiendoReservaId === reserva.id
-                                  ? "Añadiendo..."
-                                  : "Añadir a compra"}
+                                {yaEnCarritoConCantidadSuficiente
+                                  ? "Ya en carrito"
+                                  : convirtiendoReservaId === reserva.id
+                                    ? "Añadiendo..."
+                                    : "Añadir a compra"}
                               </button>
                               <button
                                 onClick={() => void handleCancelarReserva(reserva.id)}
@@ -398,18 +444,18 @@ export default function CarritoPage() {
               </div>
               <div className="flex items-center justify-between text-slate-600">
                 <span>Unidades</span>
-                <span>{totalUnidadesCarrito}</span>
+                <span>{unidadesCarrito}</span>
               </div>
               <div className="flex items-center justify-between text-slate-600">
                 <span>Subtotal</span>
-                <span>${totalCarrito.toLocaleString("es-CO")}</span>
+                <span>${subtotalCarrito.toLocaleString("es-CO")}</span>
               </div>
             </div>
 
             <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
-              <span className="text-slate-700 font-semibold">Total</span>
+              <span className="text-slate-700 font-semibold">Total a pagar</span>
               <span className="text-slate-900 text-xl font-bold">
-                ${totalCarrito.toLocaleString("es-CO")}
+                ${subtotalCarrito.toLocaleString("es-CO")}
               </span>
             </div>
 

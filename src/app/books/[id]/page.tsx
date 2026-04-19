@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams } from "next/navigation";
 import { apiFetch } from "@/services/api.client";
 import { useAuth } from "@/context/auth.context";
@@ -9,7 +9,11 @@ import {
   actualizarCantidadInventarioLibro,
   crearInventarioLibro,
 } from "@/services/inventarios.service";
-import { crearReserva } from "@/services/reservas.service";
+import {
+  crearReserva,
+  obtenerMisReservas,
+  type ReservaResponse,
+} from "@/services/reservas.service";
 import { agregarLibroAMiCarrito } from "@/services/carrito.service";
 import Iconify from "@/components/iconify/iconify";
 import MainNavbar from "@/components/navigation/main-navbar";
@@ -54,6 +58,9 @@ interface InventarioLite {
   idTienda: number;
   cantidadDisponible: number;
 }
+
+const MAX_RESERVA_MISMO_LIBRO = 3;
+const MAX_RESERVA_TOTAL = 5;
 
 // ─── Generar portada ──────────────────────────────────────────────────────────
 const generarColorPortada = (titulo: string) => {
@@ -189,6 +196,8 @@ export default function BookDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showReservaConfirmModal, setShowReservaConfirmModal] = useState(false);
+  const [cantidadReserva, setCantidadReserva] = useState(1);
+  const [misReservas, setMisReservas] = useState<ReservaResponse[]>([]);
   const [showCarritoConfirmModal, setShowCarritoConfirmModal] = useState(false);
   const [reservando, setReservando] = useState(false);
   const [reservaMensaje, setReservaMensaje] = useState("");
@@ -206,7 +215,7 @@ export default function BookDetailPage() {
 
   useEffect(() => {
     cargarDatos();
-  }, [libroId]);
+  }, [libroId, esCliente]);
 
   const cargarDatos = async () => {
     if (!libroId || typeof libroId !== "string") {
@@ -219,15 +228,23 @@ export default function BookDetailPage() {
     setError("");
     try {
       // Cargar datos básicos
-      const [libroData, autoresData, generosData, editorialesData, tiendasData, inventariosData] =
-        await Promise.all([
-          apiFetch<Libro>(`/libros/${libroId}`),
-          apiFetch<Autor[]>("/autores"),
-          apiFetch<Genero[]>("/generos"),
-          apiFetch<Editorial[]>("/editoriales"),
-          apiFetch<TiendaLite[]>("/tiendas").catch(() => []),
-          apiFetch<InventarioLite[]>("/inventarios").catch(() => []),
-        ]);
+      const [
+        libroData,
+        autoresData,
+        generosData,
+        editorialesData,
+        tiendasData,
+        inventariosData,
+        reservasData,
+      ] = await Promise.all([
+        apiFetch<Libro>(`/libros/${libroId}`),
+        apiFetch<Autor[]>("/autores"),
+        apiFetch<Genero[]>("/generos"),
+        apiFetch<Editorial[]>("/editoriales"),
+        apiFetch<TiendaLite[]>("/tiendas").catch(() => []),
+        apiFetch<InventarioLite[]>("/inventarios").catch(() => []),
+        esCliente ? obtenerMisReservas().catch(() => []) : Promise.resolve([]),
+      ]);
 
       setLibro(libroData);
       setAutores(autoresData);
@@ -236,6 +253,7 @@ export default function BookDetailPage() {
       setTiendas(tiendasData);
       const inventariosDeEsteLibro = inventariosData.filter(i => i.idLibro === libroData.id);
       setInventariosLibro(inventariosDeEsteLibro);
+      setMisReservas(reservasData);
       setIdTiendaStock(inventariosDeEsteLibro[0]?.idTienda ?? tiendasData[0]?.id ?? 0);
 
       console.log("Libro cargado:", libroData);
@@ -262,6 +280,48 @@ export default function BookDetailPage() {
   const nombreTienda = (id: number) => tiendas.find(t => t.id === id)?.nombre ?? `Tienda #${id}`;
   const totalExistencias = inventariosLibro.reduce((acc, inv) => acc + inv.cantidadDisponible, 0);
 
+  const reservasActivas = useMemo(() => {
+    const ahora = new Date();
+    return misReservas.filter(
+      reserva => reserva.estado === "activa" && new Date(reserva.horaExpiracion) > ahora
+    );
+  }, [misReservas]);
+
+  const totalReservadoActivo = useMemo(() => {
+    return reservasActivas.reduce(
+      (total, reserva) =>
+        total + reserva.itemsReserva.reduce((subTotal, item) => subTotal + item.cantidad, 0),
+      0
+    );
+  }, [reservasActivas]);
+
+  const totalReservadoMismoLibro = useMemo(() => {
+    if (!libro) return 0;
+    return reservasActivas.reduce(
+      (total, reserva) =>
+        total +
+        reserva.itemsReserva
+          .filter(item => item.idLibro === libro.id)
+          .reduce((subTotal, item) => subTotal + item.cantidad, 0),
+      0
+    );
+  }, [reservasActivas, libro]);
+
+  const maxCantidadReservable = useMemo(() => {
+    const restanteMismoLibro = Math.max(0, MAX_RESERVA_MISMO_LIBRO - totalReservadoMismoLibro);
+    const restanteTotal = Math.max(0, MAX_RESERVA_TOTAL - totalReservadoActivo);
+    return Math.max(0, Math.min(restanteMismoLibro, restanteTotal, totalExistencias));
+  }, [totalReservadoMismoLibro, totalReservadoActivo, totalExistencias]);
+
+  useEffect(() => {
+    if (!showReservaConfirmModal) return;
+    if (maxCantidadReservable <= 0) {
+      setCantidadReserva(1);
+      return;
+    }
+    setCantidadReserva(prev => Math.min(Math.max(prev, 1), maxCantidadReservable));
+  }, [showReservaConfirmModal, maxCantidadReservable]);
+
   const handleConfirmarReserva = async () => {
     if (!libro) return;
 
@@ -272,7 +332,7 @@ export default function BookDetailPage() {
     try {
       const reserva = await crearReserva({
         idLibro: libro.id,
-        cantidad: 1,
+        cantidad: cantidadReserva,
       });
 
       setReservaMensaje(
@@ -526,6 +586,10 @@ export default function BookDetailPage() {
                     <p className="text-blue-600 text-3xl font-bold">
                       ${libro.precio.toLocaleString("es-CO")}
                     </p>
+                    <p className="text-slate-600 text-sm mt-1">
+                      Existencias disponibles:{" "}
+                      <span className="font-semibold">{totalExistencias}</span>
+                    </p>
                     <div className="flex items-center gap-1.5 text-slate-400 mt-1">
                       <Iconify icon="gg:lock" width={15} />
                       <span className="text-xs">Inicia sesión para comprar o reservar</span>
@@ -594,17 +658,18 @@ export default function BookDetailPage() {
                 )}
 
                 {/* Aviso visitante */}
-                <div className="mt-4 bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-start gap-2">
-                  <Iconify icon="gg:lock" width={15} />
-                  <p className="text-blue-800 text-xs leading-relaxed">
-                    Debes{" "}
-                    <a href="/login" className="font-semibold underline">
-                      iniciar sesión
-                    </a>{" "}
-                    para reservar o agregar al carrito. Los administradores no pueden realizar
-                    compras.
-                  </p>
-                </div>
+                {!user && (
+                  <div className="mt-4 bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-start gap-2">
+                    <Iconify icon="gg:lock" width={15} />
+                    <p className="text-blue-800 text-xs leading-relaxed">
+                      Debes{" "}
+                      <a href="/login" className="font-semibold underline">
+                        iniciar sesión
+                      </a>{" "}
+                      para reservar o agregar al carrito.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -656,6 +721,47 @@ export default function BookDetailPage() {
                   Estás a punto de reservar:{" "}
                   <span className="font-semibold text-slate-900">{libro.titulo}</span>
                 </p>
+                <div className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-slate-700 text-sm font-semibold">Cantidad a reservar</p>
+                    <div className="inline-flex items-center rounded-lg border border-slate-300 overflow-hidden">
+                      <button
+                        onClick={() => setCantidadReserva(prev => Math.max(1, prev - 1))}
+                        disabled={reservando || cantidadReserva <= 1 || maxCantidadReservable <= 0}
+                        className="w-8 h-8 text-sm font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        -
+                      </button>
+                      <span className="w-10 text-center text-sm font-semibold text-slate-900">
+                        {cantidadReserva}
+                      </span>
+                      <button
+                        onClick={() =>
+                          setCantidadReserva(prev => Math.min(maxCantidadReservable, prev + 1))
+                        }
+                        disabled={
+                          reservando ||
+                          cantidadReserva >= maxCantidadReservable ||
+                          maxCantidadReservable <= 0
+                        }
+                        className="w-8 h-8 text-sm font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-2">
+                    Límite por libro: {MAX_RESERVA_MISMO_LIBRO}. Límite total activo:{" "}
+                    {MAX_RESERVA_TOTAL}. Puedes reservar hasta {maxCantidadReservable} unidad(es)
+                    ahora.
+                  </p>
+                </div>
+                {maxCantidadReservable <= 0 && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-red-700 text-sm">
+                    No puedes reservar más unidades de este libro ahora por límites de reserva o
+                    falta de existencias.
+                  </div>
+                )}
                 <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-amber-800 text-sm">
                   Tu reserva expirará en 24 horas. Si no se completa, el libro se liberará
                   automáticamente.
@@ -670,7 +776,7 @@ export default function BookDetailPage() {
                   </button>
                   <button
                     onClick={handleConfirmarReserva}
-                    disabled={reservando}
+                    disabled={reservando || maxCantidadReservable <= 0}
                     className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-60"
                   >
                     {reservando ? "Reservando..." : "Reservar"}
