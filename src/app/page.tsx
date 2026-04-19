@@ -1,10 +1,13 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { apiFetch } from "@/services/api.client";
+import { obtenerLibrosAgotados } from "@/services/inventarios.service";
 import { useAuth } from "@/context/auth.context";
 import Link from "next/link";
 import Iconify from "@/components/iconify/iconify";
+import MainNavbar from "@/components/navigation/main-navbar";
+import type { LibroAgotado } from "@/types/inventarios.types";
 
 // ─── Tipos de la API ──────────────────────────────────────────────────────────
 interface Libro {
@@ -33,6 +36,36 @@ interface Editorial {
   id: number;
   nombre: string;
 }
+interface InventarioLite {
+  idLibro: string;
+  cantidadDisponible: number;
+}
+
+const Modal = ({
+  title,
+  onClose,
+  children,
+}: {
+  title: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}) => (
+  <div className="fixed inset-0 z-[70] bg-slate-900/55 backdrop-blur-[2px] flex items-end sm:items-center justify-center p-0 sm:p-6">
+    <div className="w-full sm:max-w-2xl bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl border border-slate-200 max-h-[88vh] overflow-hidden">
+      <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+        <h3 className="text-slate-900 text-lg font-bold">{title}</h3>
+        <button
+          onClick={onClose}
+          className="w-9 h-9 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-100"
+          aria-label="Cerrar"
+        >
+          <Iconify icon="mdi:close" width={18} />
+        </button>
+      </div>
+      <div className="p-5 overflow-y-auto">{children}</div>
+    </div>
+  </div>
+);
 
 // ─── Funciones de utilidad ───────────────────────────────────────────────────
 const formatearPrecio = (precio: number): string => {
@@ -60,61 +93,6 @@ const OPCIONES_ORDEN = [
   { value: "az", label: "Alfabético A-Z" },
 ];
 
-const MenuIcon = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-    <line
-      x1="3"
-      y1="6"
-      x2="21"
-      y2="6"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-    />
-    <line
-      x1="3"
-      y1="12"
-      x2="21"
-      y2="12"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-    />
-    <line
-      x1="3"
-      y1="18"
-      x2="21"
-      y2="18"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-    />
-  </svg>
-);
-
-const CloseIcon = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-    <line
-      x1="18"
-      y1="6"
-      x2="6"
-      y2="18"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-    />
-    <line
-      x1="6"
-      y1="6"
-      x2="18"
-      y2="18"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-    />
-  </svg>
-);
-
 // ─── Generar portada ──────────────────────────────────────────────────────────
 const generarColorPortada = (titulo: string) => {
   const colors = [
@@ -136,7 +114,7 @@ const generarLetraPortada = (titulo: string) => {
 };
 
 // ─── Portada con imagen o placeholder ──────────────────────────────────────────
-const BookCover = ({ libro }: { libro: Libro }) => {
+const BookCover = ({ libro, estadoVisual }: { libro: Libro; estadoVisual: string }) => {
   const [imageError, setImageError] = useState(false);
 
   // Verificar si la URL de la imagen es válida
@@ -166,14 +144,14 @@ const BookCover = ({ libro }: { libro: Libro }) => {
         <span
           className={`absolute top-2 left-2 px-2 py-0.5 rounded-md text-xs font-bold border
           ${
-            libro.estado === "nuevo"
+            estadoVisual === "nuevo"
               ? "bg-green-50 text-green-800 border-green-400"
-              : libro.estado === "agotado"
+              : estadoVisual === "agotado"
                 ? "bg-red-50 text-red-800 border-red-400"
                 : "bg-yellow-50 text-yellow-800 border-yellow-400"
           }`}
         >
-          {libro.estado}
+          {estadoVisual}
         </span>
       </div>
     );
@@ -200,14 +178,14 @@ const BookCover = ({ libro }: { libro: Libro }) => {
       <span
         className={`absolute top-2 left-2 px-2 py-0.5 rounded-md text-xs font-bold border
         ${
-          libro.estado === "nuevo"
+          estadoVisual === "nuevo"
             ? "bg-green-50 text-green-800 border-green-400"
-            : libro.estado === "agotado"
+            : estadoVisual === "agotado"
               ? "bg-red-50 text-red-800 border-red-400"
               : "bg-yellow-50 text-yellow-800 border-yellow-400"
         }`}
       >
-        {libro.estado}
+        {estadoVisual}
       </span>
     </div>
   );
@@ -222,15 +200,22 @@ const BookCard = ({
   nombreGenero,
   isAuthenticated,
   userRole,
+  estadoVisual,
+  cantidadDisponible,
 }: {
   libro: Libro;
   nombreAutor: (id: number) => string;
   nombreGenero: (id: number) => string;
   isAuthenticated: boolean;
   userRole: UserRole;
+  estadoVisual: string;
+  cantidadDisponible: number;
 }) => {
-  const canAddToCart = isAuthenticated && userRole === "cliente";
-  const cartTooltip = !isAuthenticated
+  const estaAgotado = estadoVisual === "agotado";
+  const canAddToCart = isAuthenticated && userRole === "cliente" && !estaAgotado;
+  const cartTooltip = estaAgotado
+    ? "Sin existencias disponibles"
+    : !isAuthenticated
     ? "Inicia sesión para agregar al carrito"
     : userRole === "cliente"
       ? "Agregar al carrito"
@@ -242,7 +227,7 @@ const BookCard = ({
       className="bg-white border border-slate-200 rounded-xl overflow-hidden transition-all duration-150 hover:-translate-y-1 hover:shadow-lg group block no-underline flex flex-col"
     >
       <div className="w-full aspect-[2/3] relative overflow-hidden">
-        <BookCover libro={libro} />
+        <BookCover libro={libro} estadoVisual={estadoVisual} />
       </div>
 
       <div className="p-3 flex flex-col flex-1">
@@ -258,17 +243,12 @@ const BookCard = ({
           <div>
             <p className="text-blue-600 font-bold text-base">${formatearPrecio(libro.precio)}</p>
             <div className="flex items-center gap-1 mt-0.5 text-xs">
-              {!canAddToCart ? (
-                <>
-                  <Iconify icon="gg:lock" className="text-slate-400" width={24} />
-                  <span className="italic text-slate-400">
-                    {isAuthenticated
-                      ? "Solo clientes pueden comprar"
-                      : "Inicia sesión para comprar"}
-                  </span>
-                </>
+              {estaAgotado ? (
+                <span className="italic text-red-500 font-medium">0 libros disponibles</span>
               ) : (
-                <span className="text-green-500 font-medium">Disponible para comprar</span>
+                <span className="text-green-500 font-medium">
+                  {cantidadDisponible} libro{cantidadDisponible === 1 ? "" : "s"} disponibles
+                </span>
               )}
             </div>
           </div>
@@ -298,70 +278,68 @@ const BookCard = ({
 // ─── Página principal ─────────────────────────────────────────────────────────
 export default function CataloguePage() {
   const [libros, setLibros] = useState<Libro[]>([]);
+  const [inventarios, setInventarios] = useState<InventarioLite[]>([]);
+  const [librosAgotados, setLibrosAgotados] = useState<LibroAgotado[]>([]);
   const [autores, setAutores] = useState<Autor[]>([]);
   const [generos, setGeneros] = useState<Genero[]>([]);
   const [editoriales, setEditoriales] = useState<Editorial[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingAgotados, setLoadingAgotados] = useState(false);
+  const [errorAgotados, setErrorAgotados] = useState("");
   const [error, setError] = useState("");
   const [busqueda, setBusqueda] = useState("");
   const [inputBusqueda, setInputBusqueda] = useState("");
   const [generoActivo, setGeneroActivo] = useState("Todos");
   const [rangoIdx, setRangoIdx] = useState(0);
   const [orden, setOrden] = useState("relevancia");
-  const [menuAbierto, setMenuAbierto] = useState(false);
-  const [menuUsuarioAbierto, setMenuUsuarioAbierto] = useState(false);
+  const [showAgotadosDialog, setShowAgotadosDialog] = useState(false);
 
-  const menuUsuarioRef = useRef<HTMLDivElement>(null);
-
-  const { user, isAuthenticated, logout, refreshUser } = useAuth();
-  const nombreVisible = user?.nombre ? `${user.nombre} ${user.apellido}`.trim() : "";
-  const inicialesPerfil = user
-    ? `${user.nombre?.charAt(0).toUpperCase() ?? ""}${user.apellido?.charAt(0).toUpperCase() ?? ""}`
-    : "";
+  const { user, isAuthenticated } = useAuth();
 
   useEffect(() => {
     cargarDatos();
-    // Refrescar datos del usuario al montar el componente
-    if (isAuthenticated) {
-      refreshUser();
-    }
   }, []);
-
-  // Cerrar menú de usuario al hacer click fuera
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuUsuarioRef.current && !menuUsuarioRef.current.contains(event.target as Node)) {
-        setMenuUsuarioAbierto(false);
-      }
-    };
-
-    if (menuUsuarioAbierto) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [menuUsuarioAbierto]);
 
   const cargarDatos = async () => {
     setLoading(true);
     setError("");
     try {
-      const [l, a, g, e] = await Promise.all([
-        apiFetch<Libro[]>("/libros"),
+      const l = await apiFetch<Libro[]>("/libros");
+      setLibros(Array.isArray(l) ? l : []);
+
+      const [autoresRes, generosRes, editorialesRes, inventariosRes] = await Promise.allSettled([
         apiFetch<Autor[]>("/autores"),
         apiFetch<Genero[]>("/generos"),
         apiFetch<Editorial[]>("/editoriales"),
+        apiFetch<InventarioLite[]>("/inventarios"),
       ]);
-      setLibros(l);
-      setAutores(a);
-      setGeneros(g);
-      setEditoriales(e);
+
+      setAutores(autoresRes.status === "fulfilled" ? autoresRes.value : []);
+      setGeneros(generosRes.status === "fulfilled" ? generosRes.value : []);
+      setEditoriales(editorialesRes.status === "fulfilled" ? editorialesRes.value : []);
+      setInventarios(inventariosRes.status === "fulfilled" ? inventariosRes.value : []);
     } catch {
       setError("Error al cargar los datos");
+      setLibros([]);
+      setInventarios([]);
     } finally {
       setLoading(false);
+    }
+
+    recargarAgotados();
+  };
+
+  const recargarAgotados = async () => {
+    setLoadingAgotados(true);
+    setErrorAgotados("");
+    try {
+      const agotados = await obtenerLibrosAgotados();
+      setLibrosAgotados(agotados);
+    } catch {
+      setErrorAgotados("No fue posible cargar los libros agotados");
+      setLibrosAgotados([]);
+    } finally {
+      setLoadingAgotados(false);
     }
   };
 
@@ -369,6 +347,30 @@ export default function CataloguePage() {
   const nombreGenero = (id: number) => generos.find(g => g.id === id)?.nombre ?? `Género #${id}`;
   const nombreEditorial = (id: number) =>
     editoriales.find(e => e.id === id)?.nombre ?? `Editorial #${id}`;
+
+  const inventarioResumenPorLibro = useMemo(() => {
+    const resumen = new Map<string, { totalDisponible: number; tiendas: number }>();
+    for (const inventario of inventarios) {
+      const actual = resumen.get(inventario.idLibro) ?? { totalDisponible: 0, tiendas: 0 };
+      actual.totalDisponible += inventario.cantidadDisponible;
+      actual.tiendas += 1;
+      resumen.set(inventario.idLibro, actual);
+    }
+    return resumen;
+  }, [inventarios]);
+
+  const estadoVisualLibro = (libro: Libro) => {
+    const inventario = inventarioResumenPorLibro.get(libro.id);
+    if (!inventario || inventario.totalDisponible <= 0) {
+      return "agotado";
+    }
+    return libro.estado;
+  };
+
+  const cantidadDisponibleLibro = (idLibro: string) => {
+    const inventario = inventarioResumenPorLibro.get(idLibro);
+    return inventario?.totalDisponible ?? 0;
+  };
 
   const librosFiltrados = useMemo(() => {
     let r = [...libros];
@@ -424,182 +426,7 @@ export default function CataloguePage() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
-      {/* ── Navbar ── */}
-      <nav className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center shrink-0">
-              <Iconify icon="solar:book-2-bold" className="text-white" width={24} />
-            </div>
-            <span className="text-slate-900 text-xl font-bold tracking-tight">NovaLibros</span>
-          </Link>
-
-          <div className="hidden sm:flex items-center gap-3">
-            {isAuthenticated ? (
-              <>
-                {user?.rol === "administrador" ? (
-                  <a
-                    href="/admin"
-                    className="px-3 py-2 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 hover:bg-slate-50 transition-colors flex items-center gap-2"
-                    title="Dashboard de administración"
-                  >
-                    🛠️ Admin
-                  </a>
-                ) : (
-                  <Link
-                    href="/carrito"
-                    className="px-3 py-2 rounded-full text-sm font-semibold text-slate-800 hover:bg-slate-100 transition-colors flex items-center gap-2"
-                    title="Carrito"
-                  >
-                    <Iconify icon="material-symbols:shopping-cart-outline-rounded" />
-                  </Link>
-                )}
-
-                <button
-                  className="px-3 py-2 rounded-full text-sm font-semibold text-slate-800 hover:bg-slate-100 transition-colors relative"
-                  title="Notificaciones"
-                >
-                  <Iconify icon="material-symbols:notifications-outline" />
-                  <span className="absolute -top-1 -right-1 w-4 h-4 text-[10px] leading-4 rounded-full bg-red-500 text-white flex items-center justify-center">
-                    3
-                  </span>
-                </button>
-
-                {/* Menú de usuario con dropdown */}
-                <div ref={menuUsuarioRef} className="relative">
-                  <button
-                    onClick={() => setMenuUsuarioAbierto(!menuUsuarioAbierto)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-full bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer"
-                  >
-                    <span className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm">
-                      {inicialesPerfil || "U"}
-                    </span>
-                    <span className="text-sm font-semibold text-slate-700 truncate max-w-[120px]">
-                      {nombreVisible || "Usuario"}
-                    </span>
-                    <Iconify
-                      icon="solar:alt-arrow-down-linear"
-                      className={`text-slate-600 transition-transform ${
-                        menuUsuarioAbierto ? "rotate-180" : ""
-                      }`}
-                      width={16}
-                    />
-                  </button>
-
-                  {/* Dropdown */}
-                  {menuUsuarioAbierto && (
-                    <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-lg border border-slate-200 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                      {/* Info del usuario */}
-                      <div className="px-4 py-3 border-b border-slate-100">
-                        <p className="text-sm font-semibold text-slate-900">
-                          {nombreVisible || "Usuario"}
-                        </p>
-                        <p className="text-xs text-slate-500 truncate">{user?.correo}</p>
-                      </div>
-
-                      {/* Opciones */}
-                      <div className="py-1">
-                        <Link
-                          href="/profile"
-                          onClick={() => setMenuUsuarioAbierto(false)}
-                          className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
-                        >
-                          <Iconify icon="gg:profile" width={20} />
-                          <span className="font-medium">Mi Perfil</span>
-                        </Link>
-
-                        <button
-                          onClick={() => {
-                            setMenuUsuarioAbierto(false);
-                            logout();
-                          }}
-                          className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                        >
-                          <Iconify icon="material-symbols:logout-rounded" width={20} />
-                          <span className="font-medium">Cerrar sesión</span>
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </>
-            ) : (
-              <>
-                <a
-                  href="/login"
-                  className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 hover:bg-slate-50 transition-colors"
-                >
-                  Iniciar sesión
-                </a>
-                <a
-                  href="/register"
-                  className="px-4 py-2 bg-blue-600 rounded-lg text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
-                >
-                  Registrarse
-                </a>
-              </>
-            )}
-          </div>
-
-          <button
-            className="sm:hidden text-slate-700 p-1"
-            onClick={() => setMenuAbierto(!menuAbierto)}
-          >
-            {menuAbierto ? <CloseIcon /> : <MenuIcon />}
-          </button>
-        </div>
-
-        {menuAbierto && (
-          <div className="sm:hidden bg-white border-t border-slate-100 px-4 py-4 flex flex-col gap-3">
-            {isAuthenticated ? (
-              <>
-                {user?.rol === "root" || user?.rol === "administrador" ? (
-                  <a
-                    href="/admin"
-                    className="w-full text-center py-2.5 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800"
-                  >
-                    Dashboard Admin
-                  </a>
-                ) : (
-                  <a
-                    href="/carrito"
-                    className="w-full text-center py-2.5 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800"
-                  >
-                    Carrito
-                  </a>
-                )}
-                <Link
-                  href="/profile"
-                  className="w-full text-center py-2.5 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800"
-                >
-                  Perfil
-                </Link>
-                <button
-                  className="w-full text-center py-2.5 bg-red-100 text-red-700 rounded-lg font-semibold"
-                  onClick={() => logout()}
-                >
-                  Cerrar sesión
-                </button>
-              </>
-            ) : (
-              <>
-                <a
-                  href="/login"
-                  className="w-full text-center py-2.5 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800"
-                >
-                  Iniciar sesión
-                </a>
-                <a
-                  href="/register"
-                  className="w-full text-center py-2.5 bg-blue-600 rounded-lg text-sm font-semibold text-white"
-                >
-                  Registrarse
-                </a>
-              </>
-            )}
-          </div>
-        )}
-      </nav>
+      <MainNavbar />
 
       {/* ── Hero ── */}
       <section className="bg-slate-700 px-4 sm:px-8 py-12 sm:py-16 relative overflow-hidden">
@@ -719,6 +546,16 @@ export default function CataloguePage() {
               × Limpiar filtros
             </button>
           )}
+
+          <button
+            onClick={() => {
+              setShowAgotadosDialog(true);
+              recargarAgotados();
+            }}
+            className="ml-auto sm:ml-0 px-3 py-2 rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm font-semibold hover:bg-red-100 transition-colors"
+          >
+            Agotados ({librosAgotados.length})
+          </button>
         </div>
 
         {/* Contador */}
@@ -758,6 +595,8 @@ export default function CataloguePage() {
                 nombreGenero={nombreGenero}
                 isAuthenticated={isAuthenticated}
                 userRole={user?.rol ?? null}
+                estadoVisual={estadoVisualLibro(libro)}
+                cantidadDisponible={cantidadDisponibleLibro(libro.id)}
               />
             ))}
           </div>
@@ -802,6 +641,77 @@ export default function CataloguePage() {
           </div>
         )}
       </main>
+
+      {showAgotadosDialog && (
+        <Modal
+          title="Libros agotados"
+          onClose={() => {
+            setShowAgotadosDialog(false);
+          }}
+        >
+          {loadingAgotados ? (
+            <p className="text-slate-500 text-sm">Cargando libros agotados...</p>
+          ) : errorAgotados ? (
+            <div className="text-center py-8">
+              <p className="text-red-600 font-semibold text-sm">{errorAgotados}</p>
+              <button
+                onClick={recargarAgotados}
+                className="mt-3 text-sm font-semibold text-blue-600 hover:text-blue-700"
+              >
+                Reintentar
+              </button>
+            </div>
+          ) : librosAgotados.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-slate-900 font-semibold">No hay libros agotados por ahora.</p>
+              <p className="text-slate-500 text-sm mt-1">
+                Todo el inventario tiene unidades disponibles.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-slate-600 text-sm">
+                Estos títulos no tienen stock disponible en tiendas ({librosAgotados.length}).
+              </p>
+              {librosAgotados.map(libro => (
+                <div
+                  key={libro.idLibro}
+                  className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-slate-900 font-semibold text-sm">{libro.titulo}</p>
+                      <p className="text-slate-500 text-xs mt-0.5">{libro.autor.nombre}</p>
+                    </div>
+                    <span className="inline-flex items-center rounded-full border border-red-300 bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-700">
+                      Sin stock
+                    </span>
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600">
+                    <p>ISBN: {libro.isbn}</p>
+                    <p>Editorial: {libro.editorial.nombre}</p>
+                    <p>Tiendas afectadas: {libro.tiendasAfectadas}</p>
+                    <p>
+                      Actualizado: {new Date(libro.ultimaActualizacion).toLocaleDateString("es-CO")}
+                    </p>
+                  </div>
+
+                  <div className="mt-3">
+                    <Link
+                      href={`/books/${libro.idLibro}`}
+                      onClick={() => setShowAgotadosDialog(false)}
+                      className="inline-flex items-center text-xs font-semibold text-blue-600 hover:text-blue-700"
+                    >
+                      Ver detalle del libro
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Modal>
+      )}
 
       {/* ── Footer ── */}
       <footer className="bg-slate-800 border-t border-slate-700 mt-auto">

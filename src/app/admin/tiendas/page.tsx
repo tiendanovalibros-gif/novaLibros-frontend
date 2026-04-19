@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/auth.context'
+import MainNavbar from '@/components/navigation/main-navbar'
 import {
   crearTienda,
   editarTienda,
@@ -588,29 +589,7 @@ export default function AdminTiendasPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <nav className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center">
-              <PinIcon />
-            </div>
-            <div>
-              <span className="text-slate-900 text-base font-bold">NovaLibros</span>
-              <span className="ml-2 text-xs text-slate-400 font-medium uppercase tracking-wider">
-                Admin / Tiendas
-              </span>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <a href="/admin" className="text-slate-500 text-sm hover:text-blue-600 transition-colors">
-              Gestión de libros
-            </a>
-            <a href="/" className="text-slate-500 text-sm hover:text-blue-600 transition-colors">
-              Ver catálogo
-            </a>
-          </div>
-        </div>
-      </nav>
+      <MainNavbar />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">

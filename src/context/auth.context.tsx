@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
 import {
   login as loginService,
   logout as logoutService,
@@ -30,11 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   // Al cargar la app verificar si hay sesión activa via cookie
-  useEffect(() => {
-    checkSession();
-  }, []);
-
-  const checkSession = async () => {
+  const checkSession = useCallback(async () => {
     try {
       const res = await fetch("/api/auth/me");
       if (res.ok) {
@@ -52,7 +48,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    void checkSession();
+  }, [checkSession]);
 
   const login = async (payload: LoginPayload): Promise<Usuario> => {
     // El service guarda el token en cookie + localStorage y retorna usuario + token
@@ -80,7 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const refreshUser = async () => {
+  const refreshUser = useCallback(async () => {
     try {
       const res = await fetch("/api/auth/me");
       if (res.ok) {
@@ -93,7 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       // Si falla, mantener el estado actual
     }
-  };
+  }, []);
 
   return (
     <AuthContext.Provider
