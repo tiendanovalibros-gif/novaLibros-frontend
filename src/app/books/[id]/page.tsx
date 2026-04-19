@@ -11,6 +11,7 @@ import {
 } from "@/services/inventarios.service";
 import Iconify from "@/components/iconify/iconify";
 import MainNavbar from "@/components/navigation/main-navbar";
+import StockManagerModal from "@/components/inventarios/stock-manager-modal";
 import Link from "next/link";
 
 // ─── Tipos de la API ──────────────────────────────────────────────────────────
@@ -720,114 +721,24 @@ export default function BookDetailPage() {
           </div>
         </div>
 
-        {showStockModal && (
-          <div className="fixed inset-0 z-[70] bg-slate-900/55 backdrop-blur-[2px] flex items-end sm:items-center justify-center p-0 sm:p-6">
-            <div className="w-full sm:max-w-lg bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl border border-slate-200 max-h-[88vh] overflow-hidden">
-              <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
-                <h3 className="text-slate-900 text-lg font-bold">Agregar existencias</h3>
-                <button
-                  onClick={() => setShowStockModal(false)}
-                  className="w-9 h-9 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-100"
-                  aria-label="Cerrar"
-                >
-                  <Iconify icon="mdi:close" width={18} />
-                </button>
-              </div>
-
-              <div className="p-5 space-y-4">
-                <p className="text-slate-600 text-sm">
-                  Libro: <span className="font-semibold text-slate-800">{libro.titulo}</span>
-                </p>
-
-                <div>
-                  <label className="block text-slate-700 text-sm font-semibold mb-1.5">
-                    Tienda
-                  </label>
-                  <select
-                    value={idTiendaStock}
-                    onChange={e => setIdTiendaStock(Number(e.target.value))}
-                    className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 outline-none focus:border-blue-500"
-                  >
-                    <option value={0}>Seleccionar tienda...</option>
-                    {tiendas.map(tienda => (
-                      <option key={tienda.id} value={tienda.id}>
-                        {tienda.nombre}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-slate-700 text-sm font-semibold mb-1.5">
-                    Acción
-                  </label>
-                  <select
-                    value={tipoMovimientoStock}
-                    onChange={e => setTipoMovimientoStock(e.target.value as "sumar" | "restar")}
-                    className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 outline-none focus:border-blue-500"
-                  >
-                    <option value="sumar">Sumar existencias</option>
-                    <option value="restar">Disminuir existencias</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-slate-700 text-sm font-semibold mb-1.5">
-                    {tipoMovimientoStock === "sumar"
-                      ? "Cantidad a agregar"
-                      : "Cantidad a disminuir"}
-                  </label>
-                  <input
-                    type="number"
-                    min={1}
-                    value={cantidadStock}
-                    onChange={e => setCantidadStock(Number(e.target.value) || 1)}
-                    className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 outline-none focus:border-blue-500"
-                  />
-                </div>
-
-                {idTiendaStock > 0 && (
-                  <p className="text-xs text-slate-500">
-                    Existencias actuales en tienda:{" "}
-                    {inventariosLibro.find(i => i.idTienda === idTiendaStock)?.cantidadDisponible ??
-                      0}
-                  </p>
-                )}
-
-                {stockError && (
-                  <div className="bg-red-50 border border-red-300 rounded-lg px-3 py-2 text-red-700 text-sm">
-                    {stockError}
-                  </div>
-                )}
-                {stockMensaje && (
-                  <div className="bg-emerald-50 border border-emerald-300 rounded-lg px-3 py-2 text-emerald-700 text-sm">
-                    {stockMensaje}
-                  </div>
-                )}
-
-                <div className="flex justify-end gap-3 pt-2">
-                  <button
-                    onClick={() => setShowStockModal(false)}
-                    className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                  >
-                    Cerrar
-                  </button>
-                  <button
-                    onClick={handleGuardarExistencias}
-                    disabled={guardandoStock}
-                    className="px-5 py-2 bg-amber-600 text-white rounded-lg text-sm font-semibold hover:bg-amber-700 disabled:opacity-60"
-                  >
-                    {guardandoStock
-                      ? "Guardando..."
-                      : tipoMovimientoStock === "sumar"
-                        ? "Sumar existencias"
-                        : "Disminuir existencias"}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        <StockManagerModal
+          isOpen={showStockModal}
+          title="Gestionar existencias"
+          libroTitulo={libro.titulo}
+          tiendas={tiendas}
+          inventarios={inventariosLibro}
+          idTienda={idTiendaStock}
+          cantidad={cantidadStock}
+          tipoMovimiento={tipoMovimientoStock}
+          loading={guardandoStock}
+          error={stockError}
+          message={stockMensaje}
+          onClose={() => setShowStockModal(false)}
+          onChangeTienda={setIdTiendaStock}
+          onChangeCantidad={setCantidadStock}
+          onChangeTipoMovimiento={setTipoMovimientoStock}
+          onSubmit={handleGuardarExistencias}
+        />
 
         {/* ── Libros relacionados ── */}
         {librosRelacionados.length > 0 && (

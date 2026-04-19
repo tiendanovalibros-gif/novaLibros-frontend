@@ -56,7 +56,7 @@ const Modal = ({
         <h3 className="text-slate-900 text-lg font-bold">{title}</h3>
         <button
           onClick={onClose}
-          className="w-9 h-9 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-100"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-300 text-slate-600 leading-none hover:bg-slate-100"
           aria-label="Cerrar"
         >
           <Iconify icon="mdi:close" width={18} />

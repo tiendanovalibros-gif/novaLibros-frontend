@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth.context";
 import { apiFetch } from "@/services/api.client";
 import MainNavbar from "@/components/navigation/main-navbar";
+import StockManagerModal from "@/components/inventarios/stock-manager-modal";
 import {
   agregarExistenciasLibro,
   actualizarCantidadInventarioLibro,
@@ -314,6 +315,14 @@ export default function AdminLibrosPage() {
     >
   >({});
   const [savingReposicionLibroId, setSavingReposicionLibroId] = useState<string | null>(null);
+  const [showStockManager, setShowStockManager] = useState(false);
+  const [stockLibroActual, setStockLibroActual] = useState<Libro | null>(null);
+  const [idTiendaStock, setIdTiendaStock] = useState<number>(0);
+  const [cantidadStock, setCantidadStock] = useState<number>(1);
+  const [tipoMovimientoStock, setTipoMovimientoStock] = useState<"sumar" | "restar">("sumar");
+  const [guardandoStock, setGuardandoStock] = useState(false);
+  const [stockMensaje, setStockMensaje] = useState("");
+  const [stockError, setStockError] = useState("");
 
   const cargarDatos = async () => {
     setLoading(true);
@@ -410,6 +419,16 @@ export default function AdminLibrosPage() {
     const idsConInventario = new Set(inventarios.map(inv => inv.idLibro));
     return libros.filter(libro => !idsConInventario.has(libro.id));
   }, [libros, inventarios]);
+
+  const inventariosLibroSeleccionado = useMemo(() => {
+    if (!stockLibroActual) return [];
+    return inventarios.filter(inv => inv.idLibro === stockLibroActual.id);
+  }, [inventarios, stockLibroActual]);
+
+  const totalExistenciasLibro = (idLibro: string) =>
+    inventarios
+      .filter(inv => inv.idLibro === idLibro)
+      .reduce((acumulado, inv) => acumulado + inv.cantidadDisponible, 0);
 
   if (authLoading) {
     return (
@@ -552,6 +571,76 @@ export default function AdminLibrosPage() {
       setAgotadosError((e as { message?: string })?.message ?? "No fue posible crear inventario");
     } finally {
       setSavingReposicionLibroId(null);
+    }
+  };
+
+  const abrirGestorExistencias = (libro: Libro) => {
+    const inventariosDeLibro = inventarios.filter(inv => inv.idLibro === libro.id);
+    setStockLibroActual(libro);
+    setIdTiendaStock(inventariosDeLibro[0]?.idTienda ?? tiendas[0]?.id ?? 0);
+    setCantidadStock(1);
+    setTipoMovimientoStock("sumar");
+    setStockError("");
+    setStockMensaje("");
+    setShowStockManager(true);
+  };
+
+  const handleGuardarExistenciasLibro = async () => {
+    if (!stockLibroActual) return;
+
+    if (!idTiendaStock) {
+      setStockError("Selecciona una tienda");
+      return;
+    }
+
+    if (cantidadStock <= 0) {
+      setStockError("La cantidad debe ser mayor a 0");
+      return;
+    }
+
+    setGuardandoStock(true);
+    setStockError("");
+    setStockMensaje("");
+    try {
+      const inventarioExistente = inventariosLibroSeleccionado.find(
+        i => i.idTienda === idTiendaStock
+      );
+
+      if (inventarioExistente) {
+        if (tipoMovimientoStock === "sumar") {
+          await agregarExistenciasLibro(idTiendaStock, stockLibroActual.id, cantidadStock);
+        } else {
+          const nuevaCantidad = inventarioExistente.cantidadDisponible - cantidadStock;
+          if (nuevaCantidad < 0) {
+            setStockError("No puedes disminuir más de las existencias actuales");
+            setGuardandoStock(false);
+            return;
+          }
+          await actualizarCantidadInventarioLibro(
+            idTiendaStock,
+            stockLibroActual.id,
+            nuevaCantidad
+          );
+        }
+      } else {
+        if (tipoMovimientoStock === "restar") {
+          setStockError("No se puede disminuir porque no existe inventario en esa tienda");
+          setGuardandoStock(false);
+          return;
+        }
+        await crearInventarioLibro(idTiendaStock, stockLibroActual.id, cantidadStock);
+      }
+
+      await cargarDatos();
+      await cargarAgotadosAdmin();
+      setStockMensaje("Existencias actualizadas correctamente");
+      setCantidadStock(1);
+    } catch (e: unknown) {
+      setStockError(
+        (e as { message?: string })?.message ?? "No fue posible actualizar existencias"
+      );
+    } finally {
+      setGuardandoStock(false);
     }
   };
 
@@ -955,16 +1044,23 @@ export default function AdminLibrosPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-slate-200 bg-slate-50">
-                    {["Título", "Autor", "Género", "ISBN", "Precio", "Estado", "Acciones"].map(
-                      h => (
-                        <th
-                          key={h}
-                          className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap"
-                        >
-                          {h}
-                        </th>
-                      )
-                    )}
+                    {[
+                      "Título",
+                      "Autor",
+                      "Género",
+                      "ISBN",
+                      "Precio",
+                      "Existencias",
+                      "Estado",
+                      "Acciones",
+                    ].map(h => (
+                      <th
+                        key={h}
+                        className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap"
+                      >
+                        {h}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -987,6 +1083,17 @@ export default function AdminLibrosPage() {
                         ${Number(libro.precio).toLocaleString("es-CO")}
                       </td>
                       <td className="px-4 py-3">
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${
+                            totalExistenciasLibro(libro.id) > 0
+                              ? "bg-green-50 text-green-700 border-green-300"
+                              : "bg-red-50 text-red-700 border-red-300"
+                          }`}
+                        >
+                          {totalExistenciasLibro(libro.id)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
                         <EstadoBadge estado={libro.estado} />
                       </td>
                       <td className="px-4 py-3">
@@ -1004,6 +1111,13 @@ export default function AdminLibrosPage() {
                             className="p-1.5 rounded-lg text-slate-400 hover:text-yellow-600 hover:bg-yellow-50 transition-colors"
                           >
                             <EditIcon />
+                          </button>
+                          <button
+                            onClick={() => abrirGestorExistencias(libro)}
+                            title="Gestionar existencias"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-amber-700 hover:bg-amber-50 transition-colors"
+                          >
+                            <PackageIcon />
                           </button>
                           <button
                             onClick={() => abrirEliminar(libro)}
@@ -1317,6 +1431,25 @@ export default function AdminLibrosPage() {
           </div>
         </Modal>
       )}
+
+      <StockManagerModal
+        isOpen={showStockManager && !!stockLibroActual}
+        title="Gestionar existencias"
+        libroTitulo={stockLibroActual?.titulo ?? ""}
+        tiendas={tiendas}
+        inventarios={inventariosLibroSeleccionado}
+        idTienda={idTiendaStock}
+        cantidad={cantidadStock}
+        tipoMovimiento={tipoMovimientoStock}
+        loading={guardandoStock}
+        error={stockError}
+        message={stockMensaje}
+        onClose={() => setShowStockManager(false)}
+        onChangeTienda={setIdTiendaStock}
+        onChangeCantidad={setCantidadStock}
+        onChangeTipoMovimiento={setTipoMovimientoStock}
+        onSubmit={handleGuardarExistenciasLibro}
+      />
     </div>
   );
 }

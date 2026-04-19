@@ -142,7 +142,7 @@ const Modal = ({
         <h3 className="text-slate-900 font-bold text-lg">{title}</h3>
         <button
           onClick={onClose}
-          className="text-slate-400 hover:text-slate-600 transition-colors p-1"
+          className="inline-flex h-8 w-8 items-center justify-center text-slate-400 leading-none transition-colors hover:text-slate-600"
         >
           <CloseIcon />
         </button>

@@ -5,105 +5,105 @@ import Iconify from "@/components/iconify/iconify";
 import { getStrengthInfo, validatePassword } from "@/utils/password.utils";
 
 type ProfilePasswordEditViewProps = {
-	open: boolean;
-	onClose: () => void;
-	onSubmit?: (currentPassword: string, newPassword: string) => Promise<void>;
-	onSaved?: () => void;
+  open: boolean;
+  onClose: () => void;
+  onSubmit?: (currentPassword: string, newPassword: string) => Promise<void>;
+  onSaved?: () => void;
 };
 
 export default function ChangePasswordModal({
-	open,
-	onClose,
-	onSubmit,
-	onSaved,
+  open,
+  onClose,
+  onSubmit,
+  onSaved,
 }: ProfilePasswordEditViewProps) {
-	const [currentPassword, setCurrentPassword] = useState("");
-	const [newPassword, setNewPassword] = useState("");
-	const [confirmPassword, setConfirmPassword] = useState("");
-	const [showPassword, setShowPassword] = useState(false);
-	const [error, setError] = useState("");
-	const [saving, setSaving] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
-	useEffect(() => {
-		if (!open) return;
-		setCurrentPassword("");
-		setNewPassword("");
-		setConfirmPassword("");
-		setError("");
-	}, [open]);
+  useEffect(() => {
+    if (!open) return;
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setError("");
+  }, [open]);
 
-	useEffect(() => {
-		if (!open) return;
-		const handleKeyDown = (event: KeyboardEvent) => {
-			if (event.key === "Escape") {
-				onClose();
-			}
-		};
-		window.addEventListener("keydown", handleKeyDown);
-		return () => window.removeEventListener("keydown", handleKeyDown);
-	}, [open, onClose]);
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [open, onClose]);
 
-	if (!open) return null;
+  if (!open) return null;
 
-	const strength = getStrengthInfo(newPassword.length);
-	const strengthPercent =
-		newPassword.length === 0 ? 0 : newPassword.length < 6 ? 35 : newPassword.length < 10 ? 65 : 100;
+  const strength = getStrengthInfo(newPassword.length);
+  const strengthPercent =
+    newPassword.length === 0 ? 0 : newPassword.length < 6 ? 35 : newPassword.length < 10 ? 65 : 100;
 
-	const inputClass =
-		"w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-[15px] text-slate-900 outline-none transition-colors focus:border-blue-600";
+  const inputClass =
+    "w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-[15px] text-slate-900 outline-none transition-colors focus:border-blue-600";
 
-	const validate = (): boolean => {
-		if (!currentPassword.trim()) {
-			setError("Ingresa tu contrasena actual.");
-			return false;
-		}
-		const passwordError = validatePassword(newPassword);
-		if (passwordError) {
-			setError(passwordError);
-			return false;
-		}
-		if (currentPassword.trim() === newPassword.trim()) {
-			setError("La nueva contrasena debe ser diferente a la actual.");
-			return false;
-		}
-		if (!confirmPassword.trim()) {
-			setError("Confirma tu nueva contrasena.");
-			return false;
-		}
-		if (newPassword !== confirmPassword) {
-			setError("Las contrasenas no coinciden.");
-			return false;
-		}
-		return true;
-	};
+  const validate = (): boolean => {
+    if (!currentPassword.trim()) {
+      setError("Ingresa tu contrasena actual.");
+      return false;
+    }
+    const passwordError = validatePassword(newPassword);
+    if (passwordError) {
+      setError(passwordError);
+      return false;
+    }
+    if (currentPassword.trim() === newPassword.trim()) {
+      setError("La nueva contrasena debe ser diferente a la actual.");
+      return false;
+    }
+    if (!confirmPassword.trim()) {
+      setError("Confirma tu nueva contrasena.");
+      return false;
+    }
+    if (newPassword !== confirmPassword) {
+      setError("Las contrasenas no coinciden.");
+      return false;
+    }
+    return true;
+  };
 
-	const handleSubmit = async (event: React.FormEvent) => {
-		event.preventDefault();
-		setError("");
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setError("");
 
-		if (!validate()) return;
-		if (!onSubmit) {
-			setError("La actualizacion de contrasena no esta configurada.");
-			return;
-		}
+    if (!validate()) return;
+    if (!onSubmit) {
+      setError("La actualizacion de contrasena no esta configurada.");
+      return;
+    }
 
-		setSaving(true);
-		try {
-			await onSubmit(currentPassword.trim(), newPassword.trim());
-			onSaved?.();
-			onClose();
-		} catch (err) {
-			const message =
-				typeof err === "object" && err && "message" in err
-					? String((err as { message?: string }).message)
-					: "No se pudo actualizar la contrasena.";
-			setError(message);
-		} finally {
-			setSaving(false);
-		}
-	};
+    setSaving(true);
+    try {
+      await onSubmit(currentPassword.trim(), newPassword.trim());
+      onSaved?.();
+      onClose();
+    } catch (err) {
+      const message =
+        typeof err === "object" && err && "message" in err
+          ? String((err as { message?: string }).message)
+          : "No se pudo actualizar la contrasena.";
+      setError(message);
+    } finally {
+      setSaving(false);
+    }
+  };
 
-	return (
+  return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
       <div
@@ -118,7 +118,7 @@ export default function ChangePasswordModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full p-1 text-slate-400 transition-colors hover:text-slate-600"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-400 leading-none transition-colors hover:text-slate-600"
             aria-label="Cerrar"
           >
             <Iconify icon="material-symbols:close-rounded" width={20} />
@@ -169,7 +169,6 @@ export default function ChangePasswordModal({
                 placeholder="Minimo 8 caracteres"
                 className={`${inputClass} pr-12`}
               />
-
             </div>
             {newPassword.length > 0 && (
               <div className="mt-2 flex items-center gap-2">
@@ -222,4 +221,3 @@ export default function ChangePasswordModal({
     </div>
   );
 }
-
