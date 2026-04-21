@@ -5,7 +5,6 @@ import { useAuth } from "@/context/auth.context";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Iconify from "@/components/iconify/iconify";
-import { apiFetch } from "@/services/api.client";
 import { changePassword, getProfile, type Usuario } from "@/services/auth.service";
 import ProfileEditView from "./profile-edit-view";
 import ProfilePasswordEditView from "./profile-password-edit-view";
@@ -13,14 +12,6 @@ import ProfilePasswordEditView from "./profile-password-edit-view";
 // ═══════════════════════════════════════════════════════════════════════════════
 // TIPOS E INTERFACES
 // ═══════════════════════════════════════════════════════════════════════════════
-
-interface Preferencia {
-  idGenero: number;
-  genero?: {
-    id: number;
-    nombre: string;
-  };
-}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // COMPONENTE PRINCIPAL
@@ -36,8 +27,8 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<Usuario | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [profileError, setProfileError] = useState("");
-    // const [preferencias, setPreferencias] = useState<Preferencia[]>([]);
-    // const [loadingPreferencias, setLoadingPreferencias] = useState(true);
+  // const [preferencias, setPreferencias] = useState<Preferencia[]>([]);
+  // const [loadingPreferencias, setLoadingPreferencias] = useState(true);
   const [editOpen, setEditOpen] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
@@ -183,37 +174,6 @@ export default function ProfilePage() {
       ]
     : [];
 
-  const stats = [
-    {
-      icon: "solar:book-bold-duotone",
-      label: "Libros Favoritos",
-      value: "0",
-      color: "bg-blue-50 text-blue-600",
-      iconColor: "text-blue-600",
-    },
-    {
-      icon: "solar:cart-large-2-bold-duotone",
-      label: "Compras Realizadas",
-      value: "0",
-      color: "bg-green-50 text-green-600",
-      iconColor: "text-green-600",
-    },
-    {
-      icon: "solar:star-bold-duotone",
-      label: "Reseñas Escritas",
-      value: "0",
-      color: "bg-yellow-50 text-yellow-600",
-      iconColor: "text-yellow-600",
-    },
-    {
-      icon: "solar:heart-bold-duotone",
-      label: "Lista de Deseos",
-      value: "0",
-      color: "bg-red-50 text-red-600",
-      iconColor: "text-red-600",
-    },
-  ];
-
   // ─────────────────────────────────────────────────────────────────────────────
   // Estados de carga y validación
   // ─────────────────────────────────────────────────────────────────────────────
@@ -233,7 +193,9 @@ export default function ProfilePage() {
       <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
         <div className="max-w-md rounded-xl border border-slate-200 bg-white p-6 text-center shadow-sm">
           <p className="text-sm font-semibold text-slate-700">Perfil no disponible</p>
-          <p className="mt-2 text-sm text-slate-500">{profileError || "Intenta nuevamente mas tarde."}</p>
+          <p className="mt-2 text-sm text-slate-500">
+            {profileError || "Intenta nuevamente mas tarde."}
+          </p>
         </div>
       </div>
     );
@@ -483,7 +445,7 @@ export default function ProfilePage() {
                 </button>
 
                 <button
-                  onClick={()=> setChangePasswordOpen(true)}
+                  onClick={() => setChangePasswordOpen(true)}
                   className="flex w-full items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 text-left transition-all hover:border-purple-300 hover:bg-purple-50"
                 >
                   <div className="rounded-lg bg-purple-100 p-2">
@@ -529,20 +491,21 @@ export default function ProfilePage() {
       </main>
 
       {profile && (
-        <><ProfileEditView
-          open={editOpen}
-          onClose={() => setEditOpen(false)}
-          user={profile}
-          onSaved={handleEditSaved}
-        />
-        <ProfilePasswordEditView
-          open={changePasswordOpen}
-          onClose={() => setChangePasswordOpen(false)}
-          onSubmit={async (currentPassword, newPassword) => {
-            await changePassword(currentPassword, newPassword);
-          }}
-          onSaved={handlePasswordSaved}
-        />
+        <>
+          <ProfileEditView
+            open={editOpen}
+            onClose={() => setEditOpen(false)}
+            user={profile}
+            onSaved={handleEditSaved}
+          />
+          <ProfilePasswordEditView
+            open={changePasswordOpen}
+            onClose={() => setChangePasswordOpen(false)}
+            onSubmit={async (currentPassword, newPassword) => {
+              await changePassword(currentPassword, newPassword);
+            }}
+            onSaved={handlePasswordSaved}
+          />
         </>
       )}
     </div>
