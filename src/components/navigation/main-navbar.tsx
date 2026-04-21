@@ -61,7 +61,20 @@ const CloseIcon = () => (
   </svg>
 );
 
-export default function MainNavbar() {
+export default function MainNavbar({
+  libros = [],
+  autores = [],
+}: {
+  libros?: Array<{
+    id: string;
+    titulo: string;
+    idAutor: number;
+    precio: number;
+    isbn?: string;
+    descripcion?: string;
+  }>;
+  autores?: Array<{ id: number; nombre: string }>;
+} = {}) {
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [menuUsuarioAbierto, setMenuUsuarioAbierto] = useState(false);
   const menuUsuarioRef = useRef<HTMLDivElement>(null);
@@ -105,7 +118,7 @@ export default function MainNavbar() {
         </Link>
 
         {/* Barra de búsqueda */}
-        <SearchBar />
+        <SearchBar libros={libros} autores={autores} />
 
         <div className="hidden sm:flex items-center gap-3 shrink-0">
           <Link

@@ -5,7 +5,6 @@ import { apiFetch } from "@/services/api.client";
 import { obtenerLibrosAgotados } from "@/services/inventarios.service";
 import { agregarLibroAMiCarrito } from "@/services/carrito.service";
 import { useAuth } from "@/context/auth.context";
-import { LibrosProvider } from "@/context/libros.context";
 import Link from "next/link";
 import Iconify from "@/components/iconify/iconify";
 import MainNavbar from "@/components/navigation/main-navbar";
@@ -485,421 +484,373 @@ export default function CataloguePage() {
   }, [librosNuevos, indiceCarousel]);
 
   return (
-    <LibrosProvider
-      value={{
-        libros,
-        autores,
-        generos,
-        editoriales,
-        getNombreAutor: nombreAutor,
-        getNombreGenero: nombreGenero,
-        getNombreEditorial: nombreEditorial,
-      }}
-    >
-      <div className="min-h-screen bg-slate-50 flex flex-col">
-        <MainNavbar />
+    <div className="min-h-screen bg-slate-50 flex flex-col">
+      <MainNavbar libros={libros} autores={autores} />
 
-        {/* ── HERO: Carrusel completo de nuevos libros ── */}
-        <section
-          className="px-4 sm:px-8 py-12 sm:py-16 relative overflow-hidden transition-colors duration-700"
-          style={{ backgroundColor: colorHero }}
-        >
-          <div className="absolute inset-0 bg-black/40" />
+      {/* ── HERO: Carrusel completo de nuevos libros ── */}
+      <section
+        className="px-4 sm:px-8 py-12 sm:py-16 relative overflow-hidden transition-colors duration-700"
+        style={{ backgroundColor: colorHero }}
+      >
+        <div className="absolute inset-0 bg-black/40" />
 
-          {/* Fondo blur dinámico */}
-          {librosNuevos.length > 0 && libroActual && (
-            <div className="absolute inset-0 opacity-20">
-              {(() => {
-                const imageUrl = libroActual.imagenPortada;
-                const isValidUrl =
-                  imageUrl &&
-                  (imageUrl.startsWith("http") ||
-                    imageUrl.startsWith("https") ||
-                    imageUrl.startsWith("/"));
-                const fullImageUrl =
-                  imageUrl && imageUrl.startsWith("/")
-                    ? `${process.env.NEXT_PUBLIC_API_URL}${imageUrl}`
-                    : imageUrl;
-                return isValidUrl ? (
-                  <img
-                    src={fullImageUrl}
-                    alt="fondo"
-                    className="w-full h-full object-cover filter blur-xl scale-110"
-                  />
-                ) : null;
-              })()}
-            </div>
-          )}
+        {/* Fondo blur dinámico */}
+        {librosNuevos.length > 0 && libroActual && (
+          <div className="absolute inset-0 opacity-20">
+            {(() => {
+              const imageUrl = libroActual.imagenPortada;
+              const isValidUrl =
+                imageUrl &&
+                (imageUrl.startsWith("http") ||
+                  imageUrl.startsWith("https") ||
+                  imageUrl.startsWith("/"));
+              const fullImageUrl =
+                imageUrl && imageUrl.startsWith("/")
+                  ? `${process.env.NEXT_PUBLIC_API_URL}${imageUrl}`
+                  : imageUrl;
+              return isValidUrl ? (
+                <img
+                  src={fullImageUrl}
+                  alt="fondo"
+                  className="w-full h-full object-cover filter blur-xl scale-110"
+                />
+              ) : null;
+            })()}
+          </div>
+        )}
 
-          <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-blue-600 opacity-10 pointer-events-none" />
-          <div className="absolute -bottom-10 left-1/3 w-48 h-48 rounded-full bg-blue-100 opacity-5 pointer-events-none" />
+        <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-blue-600 opacity-10 pointer-events-none" />
+        <div className="absolute -bottom-10 left-1/3 w-48 h-48 rounded-full bg-blue-100 opacity-5 pointer-events-none" />
 
-          <div className="max-w-7xl mx-auto relative z-10">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 items-center">
-              {/* Columna izquierda – Información dinámica */}
-              <div>
-                <p className="text-slate-400 text-xs font-medium tracking-widest uppercase mb-3">
-                  {libroActual
-                    ? `NOVEDAD • ${libroActual.anoPublicacion}`
-                    : "Bienvenido a NovaLibros"}
-                </p>
+        <div className="max-w-7xl mx-auto relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 items-center">
+            {/* Columna izquierda – Información dinámica */}
+            <div>
+              <p className="text-slate-400 text-xs font-medium tracking-widest uppercase mb-3">
+                {libroActual
+                  ? `NOVEDAD • ${libroActual.anoPublicacion}`
+                  : "Bienvenido a NovaLibros"}
+              </p>
 
-                <h1 className="text-white text-3xl sm:text-4xl font-bold leading-tight tracking-tight mb-3">
-                  {libroActual ? libroActual.titulo : "Tu próxima lectura"}
-                  {!libroActual && (
-                    <>
-                      <br />
-                      <span className="text-blue-200">te está esperando</span>
-                    </>
-                  )}
-                </h1>
-
-                {libroActual ? (
+              <h1 className="text-white text-3xl sm:text-4xl font-bold leading-tight tracking-tight mb-3">
+                {libroActual ? libroActual.titulo : "Tu próxima lectura"}
+                {!libroActual && (
                   <>
-                    <div className="flex items-center gap-x-2 text-blue-200 text-base mb-4">
-                      <span>{nombreAutor(libroActual.idAutor)}</span>
-                      <span className="text-white/30">•</span>
-                      <span>{nombreGenero(libroActual.idGenero)}</span>
-                    </div>
-
-                    {libroActual.descripcion && (
-                      <p className="text-slate-300 text-sm sm:text-base mb-8 max-w-lg leading-relaxed line-clamp-4">
-                        {libroActual.descripcion}
-                      </p>
-                    )}
-
-                    <div className="flex items-center gap-8">
-                      <div>
-                        <p className="uppercase text-xs text-slate-400 tracking-widest">Precio</p>
-                        <p className="text-4xl font-bold text-white">
-                          ${formatearPrecio(libroActual.precio)}
-                        </p>
-                      </div>
-                      <Link
-                        href={`/books/${libroActual.id}`}
-                        className="inline-flex items-center px-8 py-4 bg-white text-slate-900 rounded-3xl font-semibold hover:bg-amber-100 transition-all active:scale-95"
-                      >
-                        Ver libro completo
-                        <Iconify icon="mdi:arrow-right" width={20} className="ml-2" />
-                      </Link>
-                    </div>
+                    <br />
+                    <span className="text-blue-200">te está esperando</span>
                   </>
-                ) : (
-                  <p className="text-slate-400 text-sm sm:text-base mb-8 max-w-lg leading-relaxed">
-                    Explora miles de títulos. Regístrate para reservar, comprar y mucho más.
-                  </p>
                 )}
-              </div>
+              </h1>
 
-              {/* Columna derecha – Imagen grande del libro actual */}
-              {librosNuevos.length > 0 && libroActual && (
-                <div className="hidden lg:flex justify-center">
-                  <div className="w-72 h-[432px] rounded-3xl overflow-hidden shadow-2xl border-4 border-white/30 relative">
-                    <BookCover libro={libroActual} estadoVisual={estadoVisualLibro(libroActual)} />
+              {libroActual ? (
+                <>
+                  <div className="flex items-center gap-x-2 text-blue-200 text-base mb-4">
+                    <span>{nombreAutor(libroActual.idAutor)}</span>
+                    <span className="text-white/30">•</span>
+                    <span>{nombreGenero(libroActual.idGenero)}</span>
                   </div>
-                </div>
+
+                  {libroActual.descripcion && (
+                    <p className="text-slate-300 text-sm sm:text-base mb-8 max-w-lg leading-relaxed line-clamp-4">
+                      {libroActual.descripcion}
+                    </p>
+                  )}
+
+                  <div className="flex items-center gap-8">
+                    <div>
+                      <p className="uppercase text-xs text-slate-400 tracking-widest">Precio</p>
+                      <p className="text-4xl font-bold text-white">
+                        ${formatearPrecio(libroActual.precio)}
+                      </p>
+                    </div>
+                    <Link
+                      href={`/books/${libroActual.id}`}
+                      className="inline-flex items-center px-8 py-4 bg-white text-slate-900 rounded-3xl font-semibold hover:bg-amber-100 transition-all active:scale-95"
+                    >
+                      Ver libro completo
+                      <Iconify icon="mdi:arrow-right" width={20} className="ml-2" />
+                    </Link>
+                  </div>
+                </>
+              ) : (
+                <p className="text-slate-400 text-sm sm:text-base mb-8 max-w-lg leading-relaxed">
+                  Explora miles de títulos. Regístrate para reservar, comprar y mucho más.
+                </p>
               )}
             </div>
-          </div>
-        </section>
 
-        {/* ── Stats bar — solo md+ ── */}
-        <div className="hidden md:block bg-blue-50 border-b border-slate-200">
-          <div className="max-w-7xl mx-auto px-6 py-3 flex gap-8">
-            {[
-              { icon: "📚", text: `${libros.length} títulos disponibles` },
-              { icon: "✍️", text: `${autores.length} autores` },
-              { icon: "🏷️", text: `${generos.length} géneros` },
-              { icon: "🚚", text: "Entrega en Colombia" },
-            ].map(s => (
-              <div
-                key={s.text}
-                className="flex items-center gap-2 text-blue-900 text-xs font-medium"
-              >
-                <span>{s.icon}</span>
-                <span>{s.text}</span>
+            {/* Columna derecha – Imagen grande del libro actual */}
+            {librosNuevos.length > 0 && libroActual && (
+              <div className="hidden lg:flex justify-center">
+                <div className="w-72 h-[432px] rounded-3xl overflow-hidden shadow-2xl border-4 border-white/30 relative">
+                  <BookCover libro={libroActual} estadoVisual={estadoVisualLibro(libroActual)} />
+                </div>
               </div>
-            ))}
+            )}
           </div>
         </div>
+      </section>
 
-        {/* ── Main ── */}
-        <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-8">
-          {/* Filtros género */}
-          <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
-            <span className="text-slate-600 text-sm font-semibold shrink-0">Género:</span>
-            {["Todos", ...generos.map(g => g.nombre)].map(g => (
-              <button
-                key={g}
-                onClick={() => setGeneroActivo(g)}
-                className={`px-3 py-1.5 rounded-full text-xs border whitespace-nowrap transition-all shrink-0
+      {/* ── Stats bar — solo md+ ── */}
+      <div className="hidden md:block bg-blue-50 border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-6 py-3 flex gap-8">
+          {[
+            { icon: "📚", text: `${libros.length} títulos disponibles` },
+            { icon: "✍️", text: `${autores.length} autores` },
+            { icon: "🏷️", text: `${generos.length} géneros` },
+            { icon: "🚚", text: "Entrega en Colombia" },
+          ].map(s => (
+            <div key={s.text} className="flex items-center gap-2 text-blue-900 text-xs font-medium">
+              <span>{s.icon}</span>
+              <span>{s.text}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Main ── */}
+      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-8">
+        {/* Filtros género */}
+        <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
+          <span className="text-slate-600 text-sm font-semibold shrink-0">Género:</span>
+          {["Todos", ...generos.map(g => g.nombre)].map(g => (
+            <button
+              key={g}
+              onClick={() => setGeneroActivo(g)}
+              className={`px-3 py-1.5 rounded-full text-xs border whitespace-nowrap transition-all shrink-0
                 ${
                   generoActivo === g
                     ? "bg-blue-50 border-blue-500 text-blue-800 font-semibold"
                     : "bg-white border-slate-200 text-slate-500 font-medium hover:border-slate-300"
                 }`}
-              >
-                {g}
-              </button>
-            ))}
-          </div>
-
-          {/* Precio + orden */}
-          <div className="flex flex-wrap items-center gap-3 mb-5">
-            <span className="text-slate-600 text-sm font-semibold">Precio:</span>
-            <select
-              value={rangoIdx}
-              onChange={e => setRangoIdx(Number(e.target.value))}
-              className="px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 outline-none focus:border-blue-500 cursor-pointer"
             >
-              {RANGOS_PRECIO.map((r, i) => (
-                <option key={i} value={i}>
-                  {r.label}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={orden}
-              onChange={e => setOrden(e.target.value)}
-              className="px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 outline-none focus:border-blue-500 cursor-pointer sm:ml-auto"
-            >
-              {OPCIONES_ORDEN.map(o => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-
-            {hayFiltros && (
-              <button
-                onClick={clearFilters}
-                className="text-blue-600 text-sm font-semibold hover:text-blue-700"
-              >
-                × Limpiar filtros
-              </button>
-            )}
-
-            <button
-              onClick={() => {
-                setShowAgotadosDialog(true);
-                recargarAgotados();
-              }}
-              className="ml-auto sm:ml-0 px-3 py-2 rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm font-semibold hover:bg-red-100 transition-colors"
-            >
-              Agotados ({librosAgotados.length})
+              {g}
             </button>
-          </div>
+          ))}
+        </div>
 
-          {/* Contador */}
-          {!loading && !error && (
-            <p className="text-slate-500 text-sm mb-4">
-              <span className="text-slate-900 font-bold">{librosFiltrados.length}</span>{" "}
-              {librosFiltrados.length === 1 ? "libro encontrado" : "libros encontrados"}
-              {busqueda && (
-                <span>
-                  {" "}
-                  para &quot;<strong className="text-slate-800">{busqueda}</strong>&quot;
-                </span>
-              )}
-            </p>
+        {/* Precio + orden */}
+        <div className="flex flex-wrap items-center gap-3 mb-5">
+          <span className="text-slate-600 text-sm font-semibold">Precio:</span>
+          <select
+            value={rangoIdx}
+            onChange={e => setRangoIdx(Number(e.target.value))}
+            className="px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 outline-none focus:border-blue-500 cursor-pointer"
+          >
+            {RANGOS_PRECIO.map((r, i) => (
+              <option key={i} value={i}>
+                {r.label}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={orden}
+            onChange={e => setOrden(e.target.value)}
+            className="px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 outline-none focus:border-blue-500 cursor-pointer sm:ml-auto"
+          >
+            {OPCIONES_ORDEN.map(o => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+
+          {hayFiltros && (
+            <button
+              onClick={clearFilters}
+              className="text-blue-600 text-sm font-semibold hover:text-blue-700"
+            >
+              × Limpiar filtros
+            </button>
           )}
 
-          {/* Grid */}
-          {loading ? (
-            <div className="py-20 text-center text-slate-500 text-sm">Cargando libros...</div>
-          ) : error ? (
-            <div className="py-20 text-center">
-              <p className="text-red-600 font-semibold mb-2">{error}</p>
+          <button
+            onClick={() => {
+              setShowAgotadosDialog(true);
+              recargarAgotados();
+            }}
+            className="ml-auto sm:ml-0 px-3 py-2 rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm font-semibold hover:bg-red-100 transition-colors"
+          >
+            Agotados ({librosAgotados.length})
+          </button>
+        </div>
+
+        {/* Contador */}
+        {!loading && !error && (
+          <p className="text-slate-500 text-sm mb-4">
+            <span className="text-slate-900 font-bold">{librosFiltrados.length}</span>{" "}
+            {librosFiltrados.length === 1 ? "libro encontrado" : "libros encontrados"}
+            {busqueda && (
+              <span>
+                {" "}
+                para &quot;<strong className="text-slate-800">{busqueda}</strong>&quot;
+              </span>
+            )}
+          </p>
+        )}
+
+        {/* Grid */}
+        {loading ? (
+          <div className="py-20 text-center text-slate-500 text-sm">Cargando libros...</div>
+        ) : error ? (
+          <div className="py-20 text-center">
+            <p className="text-red-600 font-semibold mb-2">{error}</p>
+            <button
+              onClick={cargarDatos}
+              className="text-blue-600 text-sm font-medium hover:underline"
+            >
+              Reintentar
+            </button>
+          </div>
+        ) : librosFiltrados.length > 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
+            {librosFiltrados.map(libro => (
+              <BookCard
+                key={libro.id}
+                libro={libro}
+                nombreAutor={nombreAutor}
+                nombreGenero={nombreGenero}
+                isAuthenticated={isAuthenticated}
+                userRole={user?.rol ?? null}
+                estadoVisual={estadoVisualLibro(libro)}
+                cantidadDisponible={cantidadDisponibleLibro(libro.id)}
+                onRequestAddToCart={handleOpenAddToCartDialog}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-20 text-slate-500">
+            <div className="text-5xl mb-4">📭</div>
+            <h3 className="text-slate-900 text-lg font-bold mb-2">No encontramos resultados</h3>
+            <p className="text-sm mb-5">Intenta con otros términos o ajusta los filtros</p>
+            <button
+              onClick={clearFilters}
+              className="px-6 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors"
+            >
+              Ver todos los libros
+            </button>
+          </div>
+        )}
+
+        {carritoError && (
+          <div className="mt-4 bg-red-50 border border-red-200 rounded-xl p-3 text-red-700 text-sm">
+            {carritoError}
+          </div>
+        )}
+
+        {carritoMensaje && (
+          <div className="mt-4 bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-emerald-700 text-sm">
+            {carritoMensaje}
+          </div>
+        )}
+
+        {/* Banner CTA */}
+        {!isAuthenticated && (
+          <div className="mt-12 bg-slate-700 rounded-2xl p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+            <div>
+              <h3 className="text-white text-lg font-bold mb-1">¿Listo para empezar?</h3>
+              <p className="text-slate-400 text-sm leading-relaxed max-w-md">
+                Regístrate gratis para comprar, reservar libros y recibir recomendaciones
+                personalizadas.
+              </p>
+            </div>
+            <div className="flex gap-3 w-full sm:w-auto shrink-0">
+              <a
+                href="/register"
+                className="flex-1 sm:flex-none text-center px-5 py-2.5 bg-blue-600 rounded-lg text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+              >
+                Crear cuenta gratis
+              </a>
+              <a
+                href="/login"
+                className="flex-1 sm:flex-none text-center px-5 py-2.5 border border-slate-500 rounded-lg text-sm font-semibold text-white hover:border-slate-400 transition-colors"
+              >
+                Iniciar sesión
+              </a>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {showAgotadosDialog && (
+        <Modal
+          title="Libros agotados"
+          onClose={() => {
+            setShowAgotadosDialog(false);
+          }}
+        >
+          {loadingAgotados ? (
+            <p className="text-slate-500 text-sm">Cargando libros agotados...</p>
+          ) : errorAgotados ? (
+            <div className="text-center py-8">
+              <p className="text-red-600 font-semibold text-sm">{errorAgotados}</p>
               <button
-                onClick={cargarDatos}
-                className="text-blue-600 text-sm font-medium hover:underline"
+                onClick={recargarAgotados}
+                className="mt-3 text-sm font-semibold text-blue-600 hover:text-blue-700"
               >
                 Reintentar
               </button>
             </div>
-          ) : librosFiltrados.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
-              {librosFiltrados.map(libro => (
-                <BookCard
-                  key={libro.id}
-                  libro={libro}
-                  nombreAutor={nombreAutor}
-                  nombreGenero={nombreGenero}
-                  isAuthenticated={isAuthenticated}
-                  userRole={user?.rol ?? null}
-                  estadoVisual={estadoVisualLibro(libro)}
-                  cantidadDisponible={cantidadDisponibleLibro(libro.id)}
-                  onRequestAddToCart={handleOpenAddToCartDialog}
-                />
-              ))}
+          ) : librosAgotados.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-slate-900 font-semibold">No hay libros agotados por ahora.</p>
+              <p className="text-slate-500 text-sm mt-1">
+                Todo el inventario tiene unidades disponibles.
+              </p>
             </div>
           ) : (
-            <div className="text-center py-20 text-slate-500">
-              <div className="text-5xl mb-4">📭</div>
-              <h3 className="text-slate-900 text-lg font-bold mb-2">No encontramos resultados</h3>
-              <p className="text-sm mb-5">Intenta con otros términos o ajusta los filtros</p>
-              <button
-                onClick={clearFilters}
-                className="px-6 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors"
-              >
-                Ver todos los libros
-              </button>
-            </div>
-          )}
-
-          {carritoError && (
-            <div className="mt-4 bg-red-50 border border-red-200 rounded-xl p-3 text-red-700 text-sm">
-              {carritoError}
-            </div>
-          )}
-
-          {carritoMensaje && (
-            <div className="mt-4 bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-emerald-700 text-sm">
-              {carritoMensaje}
-            </div>
-          )}
-
-          {/* Banner CTA */}
-          {!isAuthenticated && (
-            <div className="mt-12 bg-slate-700 rounded-2xl p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-              <div>
-                <h3 className="text-white text-lg font-bold mb-1">¿Listo para empezar?</h3>
-                <p className="text-slate-400 text-sm leading-relaxed max-w-md">
-                  Regístrate gratis para comprar, reservar libros y recibir recomendaciones
-                  personalizadas.
-                </p>
-              </div>
-              <div className="flex gap-3 w-full sm:w-auto shrink-0">
-                <a
-                  href="/register"
-                  className="flex-1 sm:flex-none text-center px-5 py-2.5 bg-blue-600 rounded-lg text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+            <div className="space-y-3">
+              <p className="text-slate-600 text-sm">
+                Estos títulos no tienen stock disponible en tiendas ({librosAgotados.length}).
+              </p>
+              {librosAgotados.map(libro => (
+                <div
+                  key={libro.idLibro}
+                  className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3"
                 >
-                  Crear cuenta gratis
-                </a>
-                <a
-                  href="/login"
-                  className="flex-1 sm:flex-none text-center px-5 py-2.5 border border-slate-500 rounded-lg text-sm font-semibold text-white hover:border-slate-400 transition-colors"
-                >
-                  Iniciar sesión
-                </a>
-              </div>
-            </div>
-          )}
-        </main>
-
-        {showAgotadosDialog && (
-          <Modal
-            title="Libros agotados"
-            onClose={() => {
-              setShowAgotadosDialog(false);
-            }}
-          >
-            {loadingAgotados ? (
-              <p className="text-slate-500 text-sm">Cargando libros agotados...</p>
-            ) : errorAgotados ? (
-              <div className="text-center py-8">
-                <p className="text-red-600 font-semibold text-sm">{errorAgotados}</p>
-                <button
-                  onClick={recargarAgotados}
-                  className="mt-3 text-sm font-semibold text-blue-600 hover:text-blue-700"
-                >
-                  Reintentar
-                </button>
-              </div>
-            ) : librosAgotados.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-slate-900 font-semibold">No hay libros agotados por ahora.</p>
-                <p className="text-slate-500 text-sm mt-1">
-                  Todo el inventario tiene unidades disponibles.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <p className="text-slate-600 text-sm">
-                  Estos títulos no tienen stock disponible en tiendas ({librosAgotados.length}).
-                </p>
-                {librosAgotados.map(libro => (
-                  <div
-                    key={libro.idLibro}
-                    className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-slate-900 font-semibold text-sm">{libro.titulo}</p>
-                        <p className="text-slate-500 text-xs mt-0.5">{libro.autor.nombre}</p>
-                      </div>
-                      <span className="inline-flex items-center rounded-full border border-red-300 bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-700">
-                        Sin stock
-                      </span>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-slate-900 font-semibold text-sm">{libro.titulo}</p>
+                      <p className="text-slate-500 text-xs mt-0.5">{libro.autor.nombre}</p>
                     </div>
-
-                    <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600">
-                      <p>ISBN: {libro.isbn}</p>
-                      <p>Editorial: {libro.editorial.nombre}</p>
-                      <p>Tiendas afectadas: {libro.tiendasAfectadas}</p>
-                      <p>
-                        Actualizado:{" "}
-                        {new Date(libro.ultimaActualizacion).toLocaleDateString("es-CO")}
-                      </p>
-                    </div>
-
-                    <div className="mt-3">
-                      <Link
-                        href={`/books/${libro.idLibro}`}
-                        onClick={() => setShowAgotadosDialog(false)}
-                        className="inline-flex items-center text-xs font-semibold text-blue-600 hover:text-blue-700"
-                      >
-                        Ver detalle del libro
-                      </Link>
-                    </div>
+                    <span className="inline-flex items-center rounded-full border border-red-300 bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-700">
+                      Sin stock
+                    </span>
                   </div>
-                ))}
-              </div>
-            )}
-          </Modal>
-        )}
 
-        <AddToCartDialog
-          isOpen={showCarritoDialog}
-          libroTitulo={libroCarritoActual?.titulo ?? ""}
-          isLoading={agregandoCarrito}
-          onClose={() => setShowCarritoDialog(false)}
-          onConfirm={handleConfirmAddToCart}
-        />
+                  <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600">
+                    <p>ISBN: {libro.isbn}</p>
+                    <p>Editorial: {libro.editorial.nombre}</p>
+                    <p>Tiendas afectadas: {libro.tiendasAfectadas}</p>
+                    <p>
+                      Actualizado: {new Date(libro.ultimaActualizacion).toLocaleDateString("es-CO")}
+                    </p>
+                  </div>
 
-        {/* ── Footer ── */}
-        <footer className="bg-slate-800 border-t border-slate-700 mt-auto">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <Iconify icon="solar:book-2-bold" className="text-white" width={24} />
-              </div>
-              <span className="text-white font-bold text-base">NovaLibros</span>
-            </div>
-
-            <div className="flex flex-wrap gap-x-6 gap-y-2">
-              {[
-                "Catálogo",
-                "Sobre nosotros",
-                "Términos y condiciones",
-                "Política de datos",
-                "Contacto",
-              ].map(link => (
-                <a
-                  key={link}
-                  href="#"
-                  className="text-slate-400 text-sm hover:text-white transition-colors"
-                >
-                  {link}
-                </a>
+                  <div className="mt-3">
+                    <Link
+                      href={`/books/${libro.idLibro}`}
+                      onClick={() => setShowAgotadosDialog(false)}
+                      className="inline-flex items-center text-xs font-semibold text-blue-600 hover:text-blue-700"
+                    >
+                      Ver detalle del libro
+                    </Link>
+                  </div>
+                </div>
               ))}
             </div>
+          )}
+        </Modal>
+      )}
 
-            <span className="text-slate-500 text-sm">© 2025 NovaLibros.</span>
-          </div>
-        </footer>
-      </div>
-    </LibrosProvider>
+      <AddToCartDialog
+        isOpen={showCarritoDialog}
+        libroTitulo={libroCarritoActual?.titulo ?? ""}
+        isLoading={agregandoCarrito}
+        onClose={() => setShowCarritoDialog(false)}
+        onConfirm={handleConfirmAddToCart}
+      />
+    </div>
   );
 }

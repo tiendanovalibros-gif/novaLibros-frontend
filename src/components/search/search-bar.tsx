@@ -2,7 +2,6 @@
 
 import { useState, useMemo } from "react";
 import Iconify from "@/components/iconify/iconify";
-import { useLibros } from "@/context/libros.context";
 
 interface Libro {
   id: string;
@@ -11,6 +10,11 @@ interface Libro {
   precio: number;
   isbn?: string;
   descripcion?: string;
+}
+
+interface Autor {
+  id: number;
+  nombre: string;
 }
 
 const generarColorPortada = (titulo: string) => {
@@ -39,9 +43,10 @@ const formatearPrecio = (precio: number): string => {
   });
 };
 
-export default function SearchBar() {
+export default function SearchBar({ libros, autores }: { libros: Libro[]; autores: Autor[] }) {
   const [inputBusqueda, setInputBusqueda] = useState("");
-  const { libros, getNombreAutor } = useLibros();
+
+  const nombreAutor = (id: number) => autores.find(a => a.id === id)?.nombre ?? `Autor #${id}`;
 
   const sugerencias = useMemo(() => {
     if (inputBusqueda.trim().length < 2) return [];
@@ -50,12 +55,11 @@ export default function SearchBar() {
     const filtered = libros.filter(
       l =>
         l.titulo.toLowerCase().includes(q) ||
-        getNombreAutor(l.idAutor).toLowerCase().includes(q) ||
+        nombreAutor(l.idAutor).toLowerCase().includes(q) ||
         (l.isbn && l.isbn.toLowerCase().includes(q)) ||
         (l.descripcion && l.descripcion.toLowerCase().includes(q))
     );
 
-    // Prioridad: coincidencias exactas en título primero
     filtered.sort((a, b) => {
       const aTitle = a.titulo.toLowerCase().includes(q) ? 0 : 1;
       const bTitle = b.titulo.toLowerCase().includes(q) ? 0 : 1;
@@ -63,11 +67,10 @@ export default function SearchBar() {
     });
 
     return filtered.slice(0, 8);
-  }, [inputBusqueda, libros, getNombreAutor]);
+  }, [inputBusqueda, libros, autores]);
 
-  const handleSugerenciaClick = (libroId: string, libroTitulo: string) => {
+  const handleSugerenciaClick = (libroId: string) => {
     setInputBusqueda("");
-    // Navegar al libro
     window.location.href = `/books/${libroId}`;
   };
 
@@ -93,7 +96,7 @@ export default function SearchBar() {
             {sugerencias.map(libro => (
               <div
                 key={libro.id}
-                onClick={() => handleSugerenciaClick(libro.id, libro.titulo)}
+                onClick={() => handleSugerenciaClick(libro.id)}
                 className="px-5 py-3 hover:bg-slate-100 cursor-pointer flex items-center gap-4 border-b border-slate-100 last:border-none"
               >
                 {/* Mini portada */}
@@ -105,7 +108,7 @@ export default function SearchBar() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-slate-900 line-clamp-1">{libro.titulo}</p>
-                  <p className="text-xs text-slate-500">{getNombreAutor(libro.idAutor)}</p>
+                  <p className="text-xs text-slate-500">{nombreAutor(libro.idAutor)}</p>
                 </div>
                 <div className="text-right">
                   <p className="font-bold text-blue-600">${formatearPrecio(libro.precio)}</p>
