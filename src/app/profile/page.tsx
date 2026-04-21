@@ -30,7 +30,7 @@ export default function ProfilePage() {
   // ─────────────────────────────────────────────────────────────────────────────
   // Estado y Hooks
   // ─────────────────────────────────────────────────────────────────────────────
-  const { loading, isAuthenticated, logout } = useAuth();
+  const { loading, isAuthenticated } = useAuth();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [profile, setProfile] = useState<Usuario | null>(null);
@@ -244,33 +244,6 @@ export default function ProfilePage() {
   // ═══════════════════════════════════════════════════════════════════════════════
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      {/* ═══════════════════════════════════════════════════════════════════════════
-          NAVBAR
-      ═══════════════════════════════════════════════════════════════════════════ */}
-      <nav className="border-b border-slate-200 bg-white/80 backdrop-blur-md">
-        <div className="mx-auto max-w-7xl px-4 py-4">
-          <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="rounded-lg bg-blue-600 p-2">
-                <Iconify icon="solar:book-2-bold" className="text-white" width={24} />
-              </div>
-              <span className="text-xl font-bold text-slate-900">NovaLibros</span>
-            </Link>
-
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => {
-                  logout();
-                }}
-                className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
-              >
-                <Iconify icon="material-symbols:logout-rounded" width={20} />
-                <span className="font-medium">Cerrar sesión</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
 
       {/* ═══════════════════════════════════════════════════════════════════════════
           CONTENIDO PRINCIPAL
@@ -554,15 +527,6 @@ export default function ProfilePage() {
           </div>
         </div>
       </main>
-
-      {/* ═══════════════════════════════════════════════════════════════════════════
-          FOOTER
-      ═══════════════════════════════════════════════════════════════════════════ */}
-      <footer className="mt-12 border-t border-slate-200 bg-white py-6">
-        <div className="mx-auto max-w-7xl px-4 text-center text-sm text-slate-600">
-          <p>© 2024 NovaLibros. Tu librería en línea de confianza.</p>
-        </div>
-      </footer>
 
       {profile && (
         <><ProfileEditView

@@ -6,6 +6,7 @@ import { apiFetch } from "@/services/api.client";
 import Iconify from "@/components/iconify/iconify";
 import Link from "next/link";
 
+
 // ─── Tipos de la API ──────────────────────────────────────────────────────────
 interface Libro {
   id: string;
@@ -53,61 +54,6 @@ const generarColorPortada = (titulo: string) => {
 const generarLetraPortada = (titulo: string) => {
   return titulo.charAt(0).toUpperCase();
 };
-
-const MenuIcon = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-    <line
-      x1="3"
-      y1="6"
-      x2="21"
-      y2="6"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-    />
-    <line
-      x1="3"
-      y1="12"
-      x2="21"
-      y2="12"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-    />
-    <line
-      x1="3"
-      y1="18"
-      x2="21"
-      y2="18"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-    />
-  </svg>
-);
-
-const CloseIcon = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-    <line
-      x1="18"
-      y1="6"
-      x2="6"
-      y2="18"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-    />
-    <line
-      x1="6"
-      y1="6"
-      x2="18"
-      y2="18"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-    />
-  </svg>
-);
 
 // ─── Portada con imagen o placeholder ──────────────────────────────────────────
 const BookCover = ({ libro, big = false }: { libro: Libro; big?: boolean }) => {
@@ -188,57 +134,7 @@ const BookCover = ({ libro, big = false }: { libro: Libro; big?: boolean }) => {
 };
 
 // ─── Navbar ───────────────────────────────────────────────────────────────────
-const Navbar = () => {
-  const [menuAbierto, setMenuAbierto] = useState(false);
-  return (
-    <nav className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center shrink-0">
-            <Iconify icon="solar:book-2-bold" className="text-white" width={24} />
-          </div>
-          <span className="text-slate-900 text-xl font-bold tracking-tight">NovaLibros</span>
-        </Link>
-        <div className="hidden sm:flex items-center gap-3">
-          <a
-            href="/login"
-            className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 hover:bg-slate-50 transition-colors"
-          >
-            Iniciar sesión
-          </a>
-          <a
-            href="/register"
-            className="px-4 py-2 bg-blue-600 rounded-lg text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
-          >
-            Registrarse
-          </a>
-        </div>
-        <button
-          className="sm:hidden text-slate-700 p-1"
-          onClick={() => setMenuAbierto(!menuAbierto)}
-        >
-          {menuAbierto ? <CloseIcon /> : <MenuIcon />}
-        </button>
-      </div>
-      {menuAbierto && (
-        <div className="sm:hidden bg-white border-t border-slate-100 px-4 py-4 flex flex-col gap-3">
-          <a
-            href="/login"
-            className="w-full text-center py-2.5 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800"
-          >
-            Iniciar sesión
-          </a>
-          <a
-            href="/register"
-            className="w-full text-center py-2.5 bg-blue-600 rounded-lg text-sm font-semibold text-white"
-          >
-            Registrarse
-          </a>
-        </div>
-      )}
-    </nav>
-  );
-};
+
 
 // ─── Tarjeta relacionado ──────────────────────────────────────────────────────
 const RelatedCard = ({ libro }: { libro: Libro }) => (
@@ -337,7 +233,7 @@ export default function BookDetailPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col">
-        <Navbar />
+
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
@@ -351,7 +247,6 @@ export default function BookDetailPage() {
   if (error || !libro) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col">
-        <Navbar />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <p className="text-red-600 font-semibold mb-4">{error || "Libro no encontrado"}</p>
@@ -366,7 +261,6 @@ export default function BookDetailPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
-      <Navbar />
 
       {/* Breadcrumb */}
       <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 py-4">
@@ -537,20 +431,6 @@ export default function BookDetailPage() {
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="bg-slate-800 border-t border-slate-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <Iconify icon="solar:book-2-bold" className="text-white" width={24} />
-            </div>
-            <span className="text-white font-bold">NovaLibros</span>
-          </div>
-          <span className="text-slate-500 text-sm">
-            © 2025 NovaLibros. Todos los derechos reservados.
-          </span>
-        </div>
-      </footer>
     </div>
   );
 }
