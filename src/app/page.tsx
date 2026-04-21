@@ -94,13 +94,6 @@ const OPCIONES_ORDEN = [
   { value: "antiguo", label: "Más antiguos" },
   { value: "az", label: "Alfabético A-Z" },
 ];
-
-<<<<<<< HEAD
-=======
-
-
-
->>>>>>> pos
 // ─── Generar portada ──────────────────────────────────────────────────────────
 const generarColorPortada = (titulo: string) => {
   const colors = [

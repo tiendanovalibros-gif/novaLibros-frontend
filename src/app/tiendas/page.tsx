@@ -109,8 +109,6 @@ export default function TiendasPublicPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <MainNavbar />
-
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
         <div className="mb-6">
           <h1 className="text-slate-900 text-2xl font-bold">Nuestras tiendas</h1>

@@ -221,8 +221,6 @@ export default function CarritoPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <MainNavbar />
-
       {(error || accionMensaje) && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 w-full max-w-md pointer-events-none">
           <div
@@ -241,6 +239,16 @@ export default function CarritoPage() {
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-6 items-start">
           <section className="space-y-6">
             <section className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <h2 className="text-slate-900 font-bold">Tu carrito</h2>
+                <Link
+                  href="/tiendas"
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border  text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+                  title="Ver tiendas"
+                >
+                  Ver tiendas
+                </Link>
+              </div>
               {!carrito || carrito.detalles.length === 0 ? (
                 <p className="text-slate-500 text-sm">Aún no has agregado libros al carrito.</p>
               ) : (
