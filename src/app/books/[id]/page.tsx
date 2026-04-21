@@ -160,7 +160,6 @@ const BookCover = ({ libro, big = false }: { libro: Libro; big?: boolean }) => {
   );
 };
 
-// ─── Tarjeta relacionado ──────────────────────────────────────────────────────
 const RelatedCard = ({ libro }: { libro: Libro }) => (
   <a
     href={`/books/${libro.id}`}
@@ -425,7 +424,6 @@ export default function BookDetailPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col">
-        <MainNavbar />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
@@ -439,7 +437,6 @@ export default function BookDetailPage() {
   if (error || !libro) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col">
-        <MainNavbar />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <p className="text-red-600 font-semibold mb-4">{error || "Libro no encontrado"}</p>
@@ -454,8 +451,6 @@ export default function BookDetailPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
-      <MainNavbar />
-
       {/* Breadcrumb */}
       <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 py-4">
         <div className="flex items-center gap-2 text-sm text-slate-500">
@@ -820,21 +815,6 @@ export default function BookDetailPage() {
           </Link>
         </div>
       </main>
-
-      {/* Footer */}
-      <footer className="bg-slate-800 border-t border-slate-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <Iconify icon="solar:book-2-bold" className="text-white" width={24} />
-            </div>
-            <span className="text-white font-bold">NovaLibros</span>
-          </div>
-          <span className="text-slate-500 text-sm">
-            © 2025 NovaLibros. Todos los derechos reservados.
-          </span>
-        </div>
-      </footer>
     </div>
   );
 }

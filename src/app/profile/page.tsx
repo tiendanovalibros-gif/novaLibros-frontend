@@ -208,11 +208,6 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       {/* ═══════════════════════════════════════════════════════════════════════════
-          NAVBAR
-      ═══════════════════════════════════════════════════════════════════════════ */}
-      <MainNavbar />
-
-      {/* ═══════════════════════════════════════════════════════════════════════════
           CONTENIDO PRINCIPAL
       ═══════════════════════════════════════════════════════════════════════════ */}
       <main className="mx-auto max-w-7xl px-4 py-8">
@@ -494,15 +489,6 @@ export default function ProfilePage() {
           </div>
         </div>
       </main>
-
-      {/* ═══════════════════════════════════════════════════════════════════════════
-          FOOTER
-      ═══════════════════════════════════════════════════════════════════════════ */}
-      <footer className="mt-12 border-t border-slate-200 bg-white py-6">
-        <div className="mx-auto max-w-7xl px-4 text-center text-sm text-slate-600">
-          <p>© 2024 NovaLibros. Tu librería en línea de confianza.</p>
-        </div>
-      </footer>
 
       {profile && (
         <>

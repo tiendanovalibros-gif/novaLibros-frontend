@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { DM_Sans } from "next/font/google";
 import "./globals.css";
+import { AuthProvider } from "@/context/auth.context";
+import LayoutShell from "@/components/layout-shell";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -12,9 +14,6 @@ export const metadata: Metadata = {
   title: "NovaLibros",
   description: "Tienda Novalibros",
 };
-
-import { AuthProvider } from "@/context/auth.context";
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -23,7 +22,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${dmSans.className} antialiased`}>
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <LayoutShell>{children}</LayoutShell>
+        </AuthProvider>
       </body>
     </html>
   );

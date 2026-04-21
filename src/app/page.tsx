@@ -95,6 +95,12 @@ const OPCIONES_ORDEN = [
   { value: "az", label: "Alfabético A-Z" },
 ];
 
+<<<<<<< HEAD
+=======
+
+
+
+>>>>>>> pos
 // ─── Generar portada ──────────────────────────────────────────────────────────
 const generarColorPortada = (titulo: string) => {
   const colors = [
@@ -226,7 +232,7 @@ const BookCard = ({
         : "Solo clientes pueden agregar al carrito";
 
   return (
-    <a
+    <Link
       href={`/books/${libro.id}`}
       className="bg-white border border-slate-200 rounded-xl overflow-hidden transition-all duration-150 hover:-translate-y-1 hover:shadow-lg group block no-underline flex flex-col"
     >
@@ -274,7 +280,7 @@ const BookCard = ({
           </div>
         </div>
       </div>
-    </a>
+    </Link>
   );
 };
 
@@ -466,8 +472,6 @@ export default function CataloguePage() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
-      <MainNavbar />
-
       {/* ── Hero ── */}
       <section className="bg-slate-700 px-4 sm:px-8 py-12 sm:py-16 relative overflow-hidden">
         <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-blue-600 opacity-10 pointer-events-none" />
@@ -678,18 +682,18 @@ export default function CataloguePage() {
               </p>
             </div>
             <div className="flex gap-3 w-full sm:w-auto shrink-0">
-              <a
+              <Link
                 href="/register"
                 className="flex-1 sm:flex-none text-center px-5 py-2.5 bg-blue-600 rounded-lg text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
               >
                 Crear cuenta gratis
-              </a>
-              <a
+              </Link>
+              <Link
                 href="/login"
                 className="flex-1 sm:flex-none text-center px-5 py-2.5 border border-slate-500 rounded-lg text-sm font-semibold text-white hover:border-slate-400 transition-colors"
               >
                 Iniciar sesión
-              </a>
+              </Link>
             </div>
           </div>
         )}
