@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
 
-const HIDDEN_LAYOUT_ROUTES = new Set(["/login", "/register", "/recover-password/forgot-password"]);
+const HIDDEN_LAYOUT_ROUTES = new Set(["/login", "/register"]);
 
 export default function LayoutShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || "";
@@ -16,11 +16,9 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
     return <>{children}</>;
   }
 
-  const isHomepage = pathname === "/";
-
   return (
     <>
-      {!isHomepage && <Header />}
+      <Header />
       {children}
       <Footer />
     </>

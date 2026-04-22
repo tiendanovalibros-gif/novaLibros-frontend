@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useAuth } from "@/context/auth.context";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import MainNavbar from "@/components/navigation/main-navbar";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -274,8 +273,6 @@ export default function AdminLibrosPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <MainNavbar />
-
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>

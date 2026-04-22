@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth.context";
-import MainNavbar from "@/components/navigation/main-navbar";
 import {
   crearTienda,
   editarTienda,
@@ -53,19 +52,6 @@ const parseApiError = (error: unknown, fallback: string): string => {
 
   return fallback;
 };
-
-const PinIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-    <path
-      d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 1 1 18 0z"
-      stroke="white"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <circle cx="12" cy="10" r="3" stroke="white" strokeWidth="2" />
-  </svg>
-);
 
 const PlusIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -273,7 +259,7 @@ export default function AdminTiendasPage() {
       return;
     }
 
-    if (user && user.rol !== "administrador") {
+    if (user && user.rol !== "administrador" && user.rol !== "root") {
       router.push("/");
       return;
     }
@@ -616,12 +602,12 @@ export default function AdminTiendasPage() {
     );
   }
 
-  if (user && user.rol !== "administrador") {
+  if (user && user.rol !== "administrador" && user.rol !== "root") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-100 text-slate-700">
         <div className="p-6 bg-white rounded-xl shadow-md text-center">
           <p className="font-semibold mb-2">Acceso denegado.</p>
-          <p>Solo los administradores pueden acceder a esta sección.</p>
+          <p>Solo administradores y root pueden acceder a esta sección.</p>
         </div>
       </div>
     );
@@ -629,8 +615,6 @@ export default function AdminTiendasPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <MainNavbar />
-
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>

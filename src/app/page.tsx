@@ -7,7 +7,6 @@ import { agregarLibroAMiCarrito } from "@/services/carrito.service";
 import { useAuth } from "@/context/auth.context";
 import Link from "next/link";
 import Iconify from "@/components/iconify/iconify";
-import MainNavbar from "@/components/navigation/main-navbar";
 import AddToCartDialog from "@/components/carrito/add-to-cart-dialog";
 import type { LibroAgotado } from "@/types/inventarios.types";
 
@@ -485,8 +484,6 @@ export default function CataloguePage() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
-      <MainNavbar libros={libros} autores={autores} />
-
       {/* ── HERO: Carrusel completo de nuevos libros ── */}
       <section
         className="px-4 sm:px-8 py-12 sm:py-16 relative overflow-hidden transition-colors duration-700"

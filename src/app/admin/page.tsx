@@ -4,15 +4,15 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth.context";
 import { apiFetch } from "@/services/api.client";
-import MainNavbar from "@/components/navigation/main-navbar";
 import StockManagerModal from "@/components/inventarios/stock-manager-modal";
 import {
   agregarExistenciasLibro,
   actualizarCantidadInventarioLibro,
   crearInventarioLibro,
+  obtenerLibrosAgotados,
   obtenerLibrosAgotadosAdmin,
 } from "@/services/inventarios.service";
-import type { LibroAgotadoAdmin } from "@/types/inventarios.types";
+import type { LibroAgotado, LibroAgotadoAdmin } from "@/types/inventarios.types";
 
 interface TiendaLite {
   id: number;
@@ -305,6 +305,8 @@ export default function AdminLibrosPage() {
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
   const [showAgotados, setShowAgotados] = useState(false);
+  const [idLibroAgotadoEnGestion, setIdLibroAgotadoEnGestion] = useState<string | null>(null);
+  const [librosAgotadosDashboard, setLibrosAgotadosDashboard] = useState<LibroAgotado[]>([]);
   const [librosAgotadosAdmin, setLibrosAgotadosAdmin] = useState<LibroAgotadoAdmin[]>([]);
   const [loadingAgotadosAdmin, setLoadingAgotadosAdmin] = useState(false);
   const [agotadosError, setAgotadosError] = useState("");
@@ -328,7 +330,7 @@ export default function AdminLibrosPage() {
     setLoading(true);
     setError("");
     try {
-      const [l, a, g, e, t, i, agotados] = await Promise.all([
+      const [l, a, g, e, t, i, agotadosAdmin, agotadosDashboard] = await Promise.all([
         apiFetch<Libro[]>("/libros"),
         apiFetch<Autor[]>("/autores"),
         apiFetch<Genero[]>("/generos"),
@@ -336,6 +338,7 @@ export default function AdminLibrosPage() {
         apiFetch<TiendaLite[]>("/tiendas").catch(() => []),
         apiFetch<InventarioLite[]>("/inventarios").catch(() => []),
         obtenerLibrosAgotadosAdmin().catch(() => []),
+        obtenerLibrosAgotados().catch(() => []),
       ]);
       setLibros(l);
       setAutores(a);
@@ -343,7 +346,8 @@ export default function AdminLibrosPage() {
       setEditoriales(e);
       setTiendas(t);
       setInventarios(i);
-      setLibrosAgotadosAdmin(agotados);
+      setLibrosAgotadosAdmin(agotadosAdmin);
+      setLibrosAgotadosDashboard(agotadosDashboard);
     } catch {
       setError("Error al cargar los datos");
     } finally {
@@ -355,11 +359,15 @@ export default function AdminLibrosPage() {
     setLoadingAgotadosAdmin(true);
     setAgotadosError("");
     try {
-      const agotados = await obtenerLibrosAgotadosAdmin();
-      setLibrosAgotadosAdmin(agotados);
+      const [agotadosAdmin, agotadosDashboard] = await Promise.all([
+        obtenerLibrosAgotadosAdmin().catch(() => []),
+        obtenerLibrosAgotados().catch(() => []),
+      ]);
+      setLibrosAgotadosAdmin(agotadosAdmin);
+      setLibrosAgotadosDashboard(agotadosDashboard);
       setReposicionPorLibro(prev => {
         const next = { ...prev };
-        for (const libro of agotados) {
+        for (const libro of agotadosAdmin) {
           if (!next[libro.idLibro]) {
             next[libro.idLibro] = {
               idTienda: libro.inventarios[0]?.idTienda ?? 0,
@@ -396,6 +404,8 @@ export default function AdminLibrosPage() {
 
   const nombreAutor = (id: number) => autores.find(a => a.id === id)?.nombre ?? `Autor #${id}`;
   const nombreGenero = (id: number) => generos.find(g => g.id === id)?.nombre ?? `Género #${id}`;
+  const nombreEditorial = (id: number) =>
+    editoriales.find(e => e.id === id)?.nombre ?? `Editorial #${id}`;
 
   const librosFiltrados = useMemo(
     () =>
@@ -414,7 +424,74 @@ export default function AdminLibrosPage() {
     [libros, busqueda, filtroEstado, autores]
   );
 
-  const librosAgotados = useMemo(() => librosAgotadosAdmin, [librosAgotadosAdmin]);
+  const idsAgotadosDashboard = useMemo(
+    () => new Set(librosAgotadosDashboard.map(libro => libro.idLibro)),
+    [librosAgotadosDashboard]
+  );
+
+  const cantidadLibrosAgotados = useMemo(() => idsAgotadosDashboard.size, [idsAgotadosDashboard]);
+
+  const librosAgotados = useMemo(() => {
+    const agotadosAdminFiltrados = librosAgotadosAdmin.filter(libro =>
+      idsAgotadosDashboard.has(libro.idLibro)
+    );
+
+    if (agotadosAdminFiltrados.length > 0) {
+      return agotadosAdminFiltrados;
+    }
+
+    // Fallback: reconstruir desde libros + inventarios cuando el endpoint admin no devuelve detalle
+    return librosAgotadosDashboard
+      .map(libroDashboard => {
+        const libroBase = libros.find(libro => libro.id === libroDashboard.idLibro);
+        if (!libroBase) return null;
+
+        const inventariosLibro = inventarios
+          .filter(inv => inv.idLibro === libroDashboard.idLibro)
+          .map(inv => ({
+            idInventario: inv.id,
+            idTienda: inv.idTienda,
+            nombreTienda:
+              tiendas.find(tienda => tienda.id === inv.idTienda)?.nombre ??
+              `Tienda #${inv.idTienda}`,
+            cantidadDisponible: inv.cantidadDisponible,
+            cantidadBloqueada: inv.cantidadBloqueada,
+            fechaActualizacion: new Date().toISOString(),
+          }));
+
+        if (inventariosLibro.length === 0) {
+          return null;
+        }
+
+        return {
+          idLibro: libroDashboard.idLibro,
+          titulo: libroDashboard.titulo,
+          isbn: libroDashboard.isbn,
+          autor: {
+            id: libroBase.idAutor,
+            nombre: nombreAutor(libroBase.idAutor),
+          },
+          editorial: {
+            id: libroBase.idEditorial,
+            nombre: nombreEditorial(libroBase.idEditorial),
+          },
+          totalDisponible: inventariosLibro.reduce((sum, inv) => sum + inv.cantidadDisponible, 0),
+          totalBloqueada: inventariosLibro.reduce((sum, inv) => sum + inv.cantidadBloqueada, 0),
+          ultimaActualizacion: libroDashboard.ultimaActualizacion,
+          inventarios: inventariosLibro,
+        };
+      })
+      .filter((libro): libro is LibroAgotadoAdmin => Boolean(libro));
+  }, [
+    idsAgotadosDashboard,
+    inventarios,
+    libros,
+    librosAgotadosAdmin,
+    librosAgotadosDashboard,
+    nombreAutor,
+    nombreEditorial,
+    tiendas,
+  ]);
   const librosSinInventario = useMemo(() => {
     const idsConInventario = new Set(inventarios.map(inv => inv.idLibro));
     return libros.filter(libro => !idsConInventario.has(libro.id));
@@ -424,6 +501,44 @@ export default function AdminLibrosPage() {
     if (!stockLibroActual) return [];
     return inventarios.filter(inv => inv.idLibro === stockLibroActual.id);
   }, [inventarios, stockLibroActual]);
+
+  const totalExistenciasPorLibro = useMemo(() => {
+    const totales = new Map<string, number>();
+
+    for (const inventario of inventarios) {
+      totales.set(
+        inventario.idLibro,
+        (totales.get(inventario.idLibro) ?? 0) + inventario.cantidadDisponible
+      );
+    }
+
+    return totales;
+  }, [inventarios]);
+
+  const estadisticasTiposLibro = useMemo(() => {
+    let agotados = 0;
+    let nuevos = 0;
+    let usados = 0;
+
+    for (const libro of libros) {
+      const existencias = totalExistenciasPorLibro.get(libro.id) ?? 0;
+
+      if (existencias <= 0) {
+        agotados += 1;
+      } else if (libro.estado === "nuevo") {
+        nuevos += 1;
+      } else if (libro.estado === "usado") {
+        usados += 1;
+      }
+    }
+
+    return {
+      total: libros.length,
+      agotados,
+      nuevos,
+      usados,
+    };
+  }, [libros, totalExistenciasPorLibro]);
 
   const totalExistenciasLibro = (idLibro: string) =>
     inventarios
@@ -938,8 +1053,6 @@ export default function AdminLibrosPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <MainNavbar />
-
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
@@ -956,12 +1069,13 @@ export default function AdminLibrosPage() {
             <button
               onClick={() => {
                 setShowAgotados(true);
+                setIdLibroAgotadoEnGestion(null);
                 cargarAgotadosAdmin();
               }}
               className="flex items-center gap-2 px-4 py-2 border border-slate-300 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
             >
               <PackageIcon />
-              Agotados ({librosAgotados.length})
+              Agotados ({cantidadLibrosAgotados})
             </button>
             <button
               onClick={abrirCrear}
@@ -975,18 +1089,18 @@ export default function AdminLibrosPage() {
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
           {[
-            { label: "Total libros", value: libros.length, color: "text-blue-600" },
+            { label: "Total libros", value: estadisticasTiposLibro.total, color: "text-blue-600" },
             {
               label: "Nuevos",
-              value: libros.filter(l => l.estado === "nuevo").length,
+              value: estadisticasTiposLibro.nuevos,
               color: "text-green-600",
             },
             {
               label: "Usados",
-              value: libros.filter(l => l.estado === "usado").length,
+              value: estadisticasTiposLibro.usados,
               color: "text-yellow-600",
             },
-            { label: "Agotados", value: librosAgotados.length, color: "text-red-600" },
+            { label: "Agotados", value: estadisticasTiposLibro.agotados, color: "text-red-600" },
           ].map(s => (
             <div key={s.label} className="bg-white border border-slate-200 rounded-xl p-4">
               <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
@@ -1227,12 +1341,18 @@ export default function AdminLibrosPage() {
         </Modal>
       )}
       {showAgotados && (
-        <Modal title="Libros agotados" onClose={() => setShowAgotados(false)}>
+        <Modal
+          title="Libros agotados"
+          onClose={() => {
+            setShowAgotados(false);
+            setIdLibroAgotadoEnGestion(null);
+          }}
+        >
           {loadingAgotadosAdmin ? (
             <div className="text-center py-8 text-slate-500">
               <p className="font-semibold">Cargando libros agotados...</p>
             </div>
-          ) : librosAgotados.length === 0 ? (
+          ) : cantidadLibrosAgotados === 0 ? (
             <div className="text-center py-8 text-slate-500">
               <div className="text-3xl mb-2">✅</div>
               <p className="font-semibold">No hay libros agotados</p>
@@ -1245,7 +1365,7 @@ export default function AdminLibrosPage() {
                 </div>
               )}
               <p className="text-slate-500 text-sm">
-                {librosAgotados.length} libro(s) con stock en cero
+                {cantidadLibrosAgotados} libro(s) con stock en cero
               </p>
               {librosAgotados.map(libro => (
                 <div key={libro.idLibro} className="p-3 bg-red-50 border border-red-200 rounded-xl">
@@ -1267,71 +1387,90 @@ export default function AdminLibrosPage() {
                     </a>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] gap-2 mt-3">
-                    <select
-                      value={
-                        reposicionPorLibro[libro.idLibro]?.idTienda ??
-                        libro.inventarios[0]?.idTienda ??
-                        0
-                      }
-                      onChange={e =>
-                        setReposicion(libro.idLibro, { idTienda: Number(e.target.value) })
-                      }
-                      className="px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-800"
-                    >
-                      <option value={0}>Seleccionar tienda</option>
-                      {libro.inventarios.map(inv => (
-                        <option key={inv.idInventario} value={inv.idTienda}>
-                          {inv.nombreTienda} (disp: {inv.cantidadDisponible})
-                        </option>
-                      ))}
-                    </select>
-
-                    <select
-                      value={reposicionPorLibro[libro.idLibro]?.tipoMovimiento ?? "sumar"}
-                      onChange={e =>
-                        setReposicion(libro.idLibro, {
-                          tipoMovimiento: e.target.value as "sumar" | "restar",
-                        })
-                      }
-                      className="px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-800"
-                    >
-                      <option value="sumar">Sumar</option>
-                      <option value="restar">Disminuir</option>
-                    </select>
-
-                    <input
-                      type="number"
-                      min={1}
-                      value={reposicionPorLibro[libro.idLibro]?.cantidadAAgregar ?? 1}
-                      onChange={e =>
-                        setReposicion(libro.idLibro, {
-                          cantidadAAgregar: Number(e.target.value) || 1,
-                        })
-                      }
-                      className="px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 w-full sm:w-24"
-                    />
-
+                  <div className="mt-3">
                     <button
-                      onClick={() => handleActualizarExistencias(libro)}
-                      disabled={savingReposicionLibroId === libro.idLibro}
-                      className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-60"
+                      onClick={() =>
+                        setIdLibroAgotadoEnGestion(actual =>
+                          actual === libro.idLibro ? null : libro.idLibro
+                        )
+                      }
+                      className="px-3 py-2 border border-slate-300 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-100"
                     >
-                      {savingReposicionLibroId === libro.idLibro
-                        ? "Guardando..."
-                        : "Actualizar existencias"}
+                      {idLibroAgotadoEnGestion === libro.idLibro
+                        ? "Ocultar gestor"
+                        : "Gestionar este libro"}
                     </button>
                   </div>
 
-                  <p className="mt-2 text-xs text-slate-500">
-                    Existencias actuales en tienda:{" "}
-                    {libro.inventarios.find(
-                      inv =>
-                        inv.idTienda ===
-                        (reposicionPorLibro[libro.idLibro]?.idTienda ??
-                          libro.inventarios[0]?.idTienda)
-                    )?.cantidadDisponible ?? 0}
-                  </p>
+                  {idLibroAgotadoEnGestion === libro.idLibro && (
+                    <>
+                      <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] gap-2 mt-3">
+                        <select
+                          value={
+                            reposicionPorLibro[libro.idLibro]?.idTienda ??
+                            libro.inventarios[0]?.idTienda ??
+                            0
+                          }
+                          onChange={e =>
+                            setReposicion(libro.idLibro, { idTienda: Number(e.target.value) })
+                          }
+                          className="px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-800"
+                        >
+                          <option value={0}>Seleccionar tienda</option>
+                          {libro.inventarios.map(inv => (
+                            <option key={inv.idInventario} value={inv.idTienda}>
+                              {inv.nombreTienda} (disp: {inv.cantidadDisponible})
+                            </option>
+                          ))}
+                        </select>
+
+                        <select
+                          value={reposicionPorLibro[libro.idLibro]?.tipoMovimiento ?? "sumar"}
+                          onChange={e =>
+                            setReposicion(libro.idLibro, {
+                              tipoMovimiento: e.target.value as "sumar" | "restar",
+                            })
+                          }
+                          className="px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-800"
+                        >
+                          <option value="sumar">Sumar</option>
+                          <option value="restar">Disminuir</option>
+                        </select>
+
+                        <input
+                          type="number"
+                          min={1}
+                          value={reposicionPorLibro[libro.idLibro]?.cantidadAAgregar ?? 1}
+                          onChange={e =>
+                            setReposicion(libro.idLibro, {
+                              cantidadAAgregar: Number(e.target.value) || 1,
+                            })
+                          }
+                          className="px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 w-full sm:w-24"
+                        />
+
+                        <button
+                          onClick={() => handleActualizarExistencias(libro)}
+                          disabled={savingReposicionLibroId === libro.idLibro}
+                          className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-60"
+                        >
+                          {savingReposicionLibroId === libro.idLibro
+                            ? "Guardando..."
+                            : "Actualizar existencias"}
+                        </button>
+                      </div>
+
+                      <p className="mt-2 text-xs text-slate-500">
+                        Existencias actuales en tienda:{" "}
+                        {libro.inventarios.find(
+                          inv =>
+                            inv.idTienda ===
+                            (reposicionPorLibro[libro.idLibro]?.idTienda ??
+                              libro.inventarios[0]?.idTienda)
+                        )?.cantidadDisponible ?? 0}
+                      </p>
+                    </>
+                  )}
                 </div>
               ))}
 

@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import MainNavbar from "@/components/navigation/main-navbar";
 import { useAuth } from "@/context/auth.context";
 import { apiFetch } from "@/services/api.client";
 import {
@@ -180,7 +179,6 @@ export default function CarritoPage() {
   if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-slate-50">
-        <MainNavbar />
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10 text-slate-600">
           Cargando carrito...
         </div>
@@ -191,7 +189,6 @@ export default function CarritoPage() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-slate-50">
-        <MainNavbar />
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
           <div className="bg-white border border-slate-200 rounded-xl p-6 text-center">
             <p className="text-slate-800 font-semibold">
@@ -209,7 +206,6 @@ export default function CarritoPage() {
   if (!esCliente) {
     return (
       <div className="min-h-screen bg-slate-50">
-        <MainNavbar />
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
           <div className="bg-white border border-slate-200 rounded-xl p-6 text-center text-slate-700">
             Solo los clientes pueden gestionar carrito y reservas.
