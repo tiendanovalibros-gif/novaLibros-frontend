@@ -122,7 +122,7 @@ export default function SearchBar({ libros, autores }: { libros: Libro[]; autore
 
         {/* Sugerencias inteligentes (dropdown) */}
         {mostrarDropdown && (
-          <div className="absolute top-[calc(100%+8px)] left-0 right-0 bg-white border border-slate-200 rounded-3xl shadow-2xl max-h-80 overflow-auto z-[60] py-2">
+          <div className="absolute top-[calc(100%+8px)] left-0 right-0 bg-white border border-slate-200 rounded-3xl shadow-2xl max-h-80 overflow-auto no-scrollbar z-[60] py-2">
             {sugerencias.map(libro => (
               <div
                 key={libro.id}
