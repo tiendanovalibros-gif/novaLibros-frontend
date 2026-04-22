@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import Iconify from "@/components/iconify/iconify";
 
 interface Libro {
@@ -45,6 +45,8 @@ const formatearPrecio = (precio: number): string => {
 
 export default function SearchBar({ libros, autores }: { libros: Libro[]; autores: Autor[] }) {
   const [inputBusqueda, setInputBusqueda] = useState("");
+  const [mostrarSugerencias, setMostrarSugerencias] = useState(false);
+  const searchBarRef = useRef<HTMLDivElement>(null);
 
   const nombreAutor = (id: number) => autores.find(a => a.id === id)?.nombre ?? `Autor #${id}`;
 
@@ -71,27 +73,55 @@ export default function SearchBar({ libros, autores }: { libros: Libro[]; autore
 
   const handleSugerenciaClick = (libroId: string) => {
     setInputBusqueda("");
+    setMostrarSugerencias(false);
     window.location.href = `/books/${libroId}`;
   };
 
+  useEffect(() => {
+    const handleClickFuera = (event: MouseEvent | TouchEvent) => {
+      if (!searchBarRef.current) return;
+      if (!searchBarRef.current.contains(event.target as Node)) {
+        setMostrarSugerencias(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickFuera);
+    document.addEventListener("touchstart", handleClickFuera);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickFuera);
+      document.removeEventListener("touchstart", handleClickFuera);
+    };
+  }, []);
+
+  const mostrarDropdown =
+    mostrarSugerencias && inputBusqueda.trim().length >= 2 && sugerencias.length > 0;
+
   return (
     <div className="flex-1 max-w-sm hidden sm:block">
-      <div className="relative">
+      <div ref={searchBarRef} className="relative">
         <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
           <Iconify icon="material-symbols:search-rounded" width={22} className="text-slate-400" />
         </div>
         <input
           type="text"
           value={inputBusqueda}
+          onFocus={() => setMostrarSugerencias(true)}
           onChange={e => {
             setInputBusqueda(e.target.value);
+            setMostrarSugerencias(true);
+          }}
+          onKeyDown={e => {
+            if (e.key === "Escape") {
+              setMostrarSugerencias(false);
+            }
           }}
           placeholder="Buscar libros, autores..."
           className="w-full pl-11 pr-4 py-2 rounded-2xl text-sm text-slate-900 bg-slate-100 outline-none focus:ring-2 focus:ring-blue-400 focus:bg-white transition-all"
         />
 
         {/* Sugerencias inteligentes (dropdown) */}
-        {inputBusqueda.trim().length >= 2 && sugerencias.length > 0 && (
+        {mostrarDropdown && (
           <div className="absolute top-[calc(100%+8px)] left-0 right-0 bg-white border border-slate-200 rounded-3xl shadow-2xl max-h-80 overflow-auto z-[60] py-2">
             {sugerencias.map(libro => (
               <div
