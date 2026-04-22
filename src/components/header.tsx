@@ -2,18 +2,55 @@
 
 import Link from "next/link";
 import Iconify from "@/components/iconify/iconify";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/context/auth.context";
+import SearchBar from "@/components/search/search-bar";
+import { apiFetch } from "@/services/api.client";
+
+interface HeaderLibro {
+  id: string;
+  titulo: string;
+  idAutor: number;
+  precio: number;
+  isbn?: string;
+  descripcion?: string;
+}
+
+interface HeaderAutor {
+  id: number;
+  nombre: string;
+}
 
 export default function Header() {
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [menuUsuarioAbierto, setMenuUsuarioAbierto] = useState(false);
+  const [librosBusqueda, setLibrosBusqueda] = useState<HeaderLibro[]>([]);
+  const [autoresBusqueda, setAutoresBusqueda] = useState<HeaderAutor[]>([]);
   const menuUsuarioRef = useRef<HTMLDivElement>(null);
   const { isAuthenticated, user, logout } = useAuth();
   const nombreVisible = user?.nombre ? `${user.nombre} ${user.apellido}`.trim() : "";
   const inicialesPerfil = user
     ? `${user.nombre?.charAt(0).toUpperCase() ?? ""}${user.apellido?.charAt(0).toUpperCase() ?? ""}`
     : "";
+
+  useEffect(() => {
+    const cargarBusquedaNavbar = async () => {
+      try {
+        const [libros, autores] = await Promise.all([
+          apiFetch<HeaderLibro[]>("/libros").catch(() => []),
+          apiFetch<HeaderAutor[]>("/autores").catch(() => []),
+        ]);
+        setLibrosBusqueda(libros);
+        setAutoresBusqueda(autores);
+      } catch {
+        setLibrosBusqueda([]);
+        setAutoresBusqueda([]);
+      }
+    };
+
+    void cargarBusquedaNavbar();
+  }, []);
+
   return (
     <nav className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
@@ -23,6 +60,8 @@ export default function Header() {
           </div>
           <span className="text-slate-900 text-xl font-bold tracking-tight">NovaLibros</span>
         </Link>
+
+        <SearchBar libros={librosBusqueda} autores={autoresBusqueda} />
 
         <div className="hidden sm:flex items-center gap-3">
           <Link
