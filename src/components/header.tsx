@@ -54,19 +54,28 @@ export default function Header() {
   return (
     <nav className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center shrink-0">
-            <Iconify icon="solar:book-2-bold" className="text-white" width={24} />
-          </div>
-          <span className="text-slate-900 text-xl font-bold tracking-tight">NovaLibros</span>
-        </Link>
+        {user?.rol === "root" ? (
+          <Link href="/root" className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center shrink-0">
+              <Iconify icon="solar:book-2-bold" className="text-white" width={24} />
+            </div>
+            <span className="text-slate-900 text-xl font-bold tracking-tight">NovaLibros</span>
+          </Link>
+        ) : (
+          <Link href="/" className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center shrink-0">
+              <Iconify icon="solar:book-2-bold" className="text-white" width={24} />
+            </div>
+            <span className="text-slate-900 text-xl font-bold tracking-tight">NovaLibros</span>
+          </Link>
+        )}
 
         <SearchBar libros={librosBusqueda} autores={autoresBusqueda} />
 
         <div className="hidden sm:flex items-center gap-3">
           <Link
             href="/tiendas"
-            className="px-3 py-2 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-100 transition-colors"
+            className="px-3 py-2 rounded-lg text-sm font-semibold text-slate-700 hover:bg-blue-50 transition-colors"
             title="Ver tiendas"
           >
             Tiendas
@@ -74,23 +83,35 @@ export default function Header() {
 
           {isAuthenticated ? (
             <>
-              {(user?.rol === "administrador" || user?.rol === "root") && (
+              {user?.rol === "administrador" ? (
                 <Link
                   href="/admin"
                   className="px-3 py-2 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 hover:bg-slate-50 transition-colors flex items-center gap-2"
                   title="Dashboard de administración"
                 >
-                  🛠️ Admin
+                  Administración
                 </Link>
+              ) : (
+                user?.rol === "root" && (
+                  <Link
+                    href="/"
+                    className="px-3 py-2 rounded-lg text-sm font-semibold text-slate-800 hover:bg-blue-50 transition-colors flex items-center gap-2"
+                    title="Catalogo de libros"
+                  >
+                    Catalogo
+                  </Link>
+                )
               )}
 
-              <Link
-                href="/carrito"
-                className="px-3 py-2 rounded-full text-sm font-semibold text-slate-800 hover:bg-slate-100 transition-colors flex items-center gap-2"
-                title="Carrito"
-              >
-                <Iconify icon="material-symbols:shopping-cart-outline-rounded" />
-              </Link>
+              {user?.rol === "cliente" && (
+                <Link
+                  href="/carrito"
+                  className="px-3 py-2 rounded-full text-sm font-semibold text-slate-800 hover:bg-blue-50 transition-colors flex items-center gap-2"
+                  title="Carrito"
+                >
+                  <Iconify icon="material-symbols:shopping-cart-outline-rounded" />
+                </Link>
+              )}
 
               <button
                 className="px-3 py-2 rounded-full text-sm font-semibold text-slate-800 hover:bg-slate-100 transition-colors relative"

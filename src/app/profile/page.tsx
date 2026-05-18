@@ -7,16 +7,8 @@ import Link from "next/link";
 import Iconify from "@/components/iconify/iconify";
 import MainNavbar from "@/components/navigation/main-navbar";
 import { changePassword, getProfile, type Usuario } from "@/services/auth.service";
-import ProfileEditView from "./profile-edit-view";
-import ProfilePasswordEditView from "./profile-password-edit-view";
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// TIPOS E INTERFACES
-// ═══════════════════════════════════════════════════════════════════════════════
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// COMPONENTE PRINCIPAL
-// ═══════════════════════════════════════════════════════════════════════════════
+import ProfileEditView from "@/components/profile/profile-edit-view";
+import ProfilePasswordEditView from "@/components/profile/profile-password-edit-view";
 
 export default function ProfilePage() {
   // ─────────────────────────────────────────────────────────────────────────────
