@@ -12,6 +12,7 @@ import {
   quitarLibroDeMiCarrito,
   type CarritoResponse,
 } from "@/services/carrito.service";
+import SeleccionTiendaModal from "@/components/carrito/seleccion-tienda-modal";
 import { formatearSaldo, obtenerMiSaldo } from "@/services/pagos.service";
 import {
   cancelarReserva,
@@ -41,6 +42,7 @@ export default function CarritoPage() {
   const [convirtiendoReservaId, setConvirtiendoReservaId] = useState<string | null>(null);
   const [comprando, setComprando] = useState(false);
   const [mostrarSaldoInsuficiente, setMostrarSaldoInsuficiente] = useState(false);
+  const [mostrarSeleccionTienda, setMostrarSeleccionTienda] = useState(false);
 
   const esCliente = user?.rol === "cliente";
 
@@ -215,26 +217,29 @@ export default function CarritoPage() {
     }
   };
 
-  const handleComprar = async () => {
+  const handleComprar = () => {
     if (!carrito || carrito.detalles.length === 0) return;
 
     setError("");
     setAccionMensaje("");
-
-    if (stockInsuficiente) {
-      setError("No hay existencias suficientes para completar la compra");
-      return;
-    }
 
     if (!saldoSuficiente) {
       setMostrarSaldoInsuficiente(true);
       return;
     }
 
+    setMostrarSeleccionTienda(true);
+  };
+
+  const handleConfirmarTienda = async (idTienda: number) => {
     setComprando(true);
+    setError("");
     try {
-      const respuesta = await checkoutMiCarrito({ metodoEntrega: "domicilio" });
-      setAccionMensaje(`Compra realizada. Orden ${respuesta.numeroOrden}`);
+      const respuesta = await checkoutMiCarrito({ idTienda });
+      setMostrarSeleccionTienda(false);
+      setAccionMensaje(
+        `Compra realizada. Orden ${respuesta.numeroOrden}${respuesta.nombreTienda ? ` — Recoge en ${respuesta.nombreTienda}` : ""}`
+      );
       setSaldo(prev => ({
         id: prev?.id ?? null,
         idUsuario: prev?.idUsuario ?? user?.id ?? "",
@@ -571,12 +576,11 @@ export default function CarritoPage() {
             </div>
 
             <button
-              onClick={() => void handleComprar()}
+              onClick={handleComprar}
               disabled={
                 !carrito ||
                 carrito.detalles.length === 0 ||
                 comprando ||
-                stockInsuficiente ||
                 !saldoSuficiente
               }
               className="mt-5 w-full py-2.5 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
@@ -596,6 +600,13 @@ export default function CarritoPage() {
           setMostrarSaldoInsuficiente(false);
           router.push("/profile/pagos");
         }}
+      />
+
+      <SeleccionTiendaModal
+        isOpen={mostrarSeleccionTienda}
+        comprando={comprando}
+        onClose={() => setMostrarSeleccionTienda(false)}
+        onConfirm={idTienda => void handleConfirmarTienda(idTienda)}
       />
     </div>
   );

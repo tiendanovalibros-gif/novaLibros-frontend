@@ -32,7 +32,7 @@ export interface AddItemCarritoPayload {
 }
 
 export interface CheckoutCarritoPayload {
-  metodoEntrega?: string;
+  idTienda: number;
   direccionEntrega?: string;
 }
 
@@ -40,7 +40,22 @@ export interface CheckoutCarritoResponse {
   pedidoId: string;
   numeroOrden: string;
   montoTotal: number | string;
+  idTienda: number | null;
+  nombreTienda: string | null;
   saldoDisponible: number | string;
+}
+
+export interface TiendaRecogidaOpcion {
+  id: number;
+  nombre: string;
+  direccion: string;
+  direccionNormalizada: string | null;
+  ciudad: string | null;
+  latitud: number;
+  longitud: number;
+  distanciaKm: number | null;
+  puedeCompletarCarrito: boolean;
+  faltantes: Array<{ idLibro: string; solicitado: number; disponible: number }>;
 }
 
 export async function obtenerMiCarrito(): Promise<CarritoResponse> {
@@ -73,10 +88,21 @@ export async function actualizarCantidadLibroMiCarrito(
 }
 
 export async function checkoutMiCarrito(
-  payload: CheckoutCarritoPayload = {}
+  payload: CheckoutCarritoPayload
 ): Promise<CheckoutCarritoResponse> {
   return apiFetch<CheckoutCarritoResponse>("/carritos/me/checkout", {
     method: "POST",
     body: JSON.stringify(payload),
   });
+}
+
+export async function obtenerOpcionesRecogida(
+  lat?: number,
+  lng?: number
+): Promise<TiendaRecogidaOpcion[]> {
+  const params = new URLSearchParams();
+  if (lat !== undefined) params.set("lat", String(lat));
+  if (lng !== undefined) params.set("lng", String(lng));
+  const qs = params.toString();
+  return apiFetch<TiendaRecogidaOpcion[]>(`/carritos/me/opciones-recogida${qs ? `?${qs}` : ""}`);
 }
