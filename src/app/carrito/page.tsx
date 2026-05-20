@@ -2,27 +2,35 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth.context";
 import { apiFetch } from "@/services/api.client";
 import {
   actualizarCantidadLibroMiCarrito,
+  checkoutMiCarrito,
   obtenerMiCarrito,
   quitarLibroDeMiCarrito,
   type CarritoResponse,
 } from "@/services/carrito.service";
+import { formatearSaldo, obtenerMiSaldo } from "@/services/pagos.service";
 import {
   cancelarReserva,
   convertirReservaACarrito,
   obtenerMisReservas,
   type ReservaResponse,
 } from "@/services/reservas.service";
+import type { SaldoUsuario } from "@/types/pagos.types";
+import SaldoInsuficienteDialog from "@/components/pagos/saldo-insuficiente-dialog";
 
 export default function CarritoPage() {
+  const router = useRouter();
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [loadingSaldo, setLoadingSaldo] = useState(true);
   const [error, setError] = useState("");
   const [accionMensaje, setAccionMensaje] = useState("");
   const [carrito, setCarrito] = useState<CarritoResponse | null>(null);
+  const [saldo, setSaldo] = useState<SaldoUsuario | null>(null);
   const [reservas, setReservas] = useState<ReservaResponse[]>([]);
   const [inventarios, setInventarios] = useState<
     Array<{ idLibro: string; cantidadDisponible: number }>
@@ -31,6 +39,8 @@ export default function CarritoPage() {
   const [actualizandoCantidadId, setActualizandoCantidadId] = useState<number | null>(null);
   const [cancelandoReservaId, setCancelandoReservaId] = useState<string | null>(null);
   const [convirtiendoReservaId, setConvirtiendoReservaId] = useState<string | null>(null);
+  const [comprando, setComprando] = useState(false);
+  const [mostrarSaldoInsuficiente, setMostrarSaldoInsuficiente] = useState(false);
 
   const esCliente = user?.rol === "cliente";
 
@@ -55,27 +65,35 @@ export default function CarritoPage() {
 
     const cargarData = async () => {
       setLoading(true);
+      setLoadingSaldo(true);
       setError("");
       try {
-        const [carritoData, reservasData, inventariosData] = await Promise.all([
+        const [carritoData, reservasData, inventariosData, saldoData] = await Promise.all([
           obtenerMiCarrito(),
           obtenerMisReservas(),
           apiFetch<Array<{ idLibro: string; cantidadDisponible: number }>>("/inventarios").catch(
             () => []
           ),
+          obtenerMiSaldo().catch(() => ({
+            id: null,
+            idUsuario: user?.id ?? "",
+            saldoDisponible: 0,
+          })),
         ]);
         setCarrito(carritoData);
         setReservas(reservasData.filter(r => r.estado === "activa"));
         setInventarios(inventariosData);
+        setSaldo(saldoData);
       } catch (e: unknown) {
         setError((e as { message?: string })?.message ?? "No se pudo cargar tu carrito");
       } finally {
         setLoading(false);
+        setLoadingSaldo(false);
       }
     };
 
     void cargarData();
-  }, [authLoading, isAuthenticated, esCliente]);
+  }, [authLoading, isAuthenticated, esCliente, user?.id]);
 
   const subtotalCarrito = useMemo(() => {
     if (!carrito) return 0;
@@ -84,6 +102,17 @@ export default function CarritoPage() {
       0
     );
   }, [carrito]);
+
+  const saldoDisponible = useMemo(
+    () => Number(saldo?.saldoDisponible ?? 0),
+    [saldo?.saldoDisponible]
+  );
+
+  const saldoSuficiente = useMemo(() => {
+    if (!carrito || carrito.detalles.length === 0) return true;
+    if (loadingSaldo) return false;
+    return saldoDisponible >= subtotalCarrito;
+  }, [carrito, loadingSaldo, saldoDisponible, subtotalCarrito]);
 
   const unidadesCarrito = useMemo(() => {
     if (!carrito) return 0;
@@ -107,6 +136,16 @@ export default function CarritoPage() {
     }
     return resumen;
   }, [inventarios]);
+
+  const stockInsuficiente = useMemo(() => {
+    if (!carrito) return false;
+    const resumen = new Map<string, number>();
+    for (const inventario of inventarios) {
+      const actual = resumen.get(inventario.idLibro) ?? 0;
+      resumen.set(inventario.idLibro, actual + inventario.cantidadDisponible);
+    }
+    return carrito.detalles.some(item => (resumen.get(item.idLibro) ?? 0) < item.cantidad);
+  }, [carrito, inventarios]);
 
   const getBookCoverUrl = (imagenPortada?: string | null) => {
     if (!imagenPortada) return null;
@@ -173,6 +212,47 @@ export default function CarritoPage() {
       setError((e as { message?: string })?.message ?? "No se pudo añadir la reserva a compra");
     } finally {
       setConvirtiendoReservaId(null);
+    }
+  };
+
+  const handleComprar = async () => {
+    if (!carrito || carrito.detalles.length === 0) return;
+
+    setError("");
+    setAccionMensaje("");
+
+    if (stockInsuficiente) {
+      setError("No hay existencias suficientes para completar la compra");
+      return;
+    }
+
+    if (!saldoSuficiente) {
+      setMostrarSaldoInsuficiente(true);
+      return;
+    }
+
+    setComprando(true);
+    try {
+      const respuesta = await checkoutMiCarrito({ metodoEntrega: "domicilio" });
+      setAccionMensaje(`Compra realizada. Orden ${respuesta.numeroOrden}`);
+      setSaldo(prev => ({
+        id: prev?.id ?? null,
+        idUsuario: prev?.idUsuario ?? user?.id ?? "",
+        saldoDisponible: respuesta.saldoDisponible,
+      }));
+
+      const [carritoData, inventariosData] = await Promise.all([
+        obtenerMiCarrito().catch(() => null),
+        apiFetch<Array<{ idLibro: string; cantidadDisponible: number }>>("/inventarios").catch(
+          () => []
+        ),
+      ]);
+      setCarrito(carritoData);
+      setInventarios(inventariosData);
+    } catch (e: unknown) {
+      setError((e as { message?: string })?.message ?? "No se pudo completar la compra");
+    } finally {
+      setComprando(false);
     }
   };
 
@@ -456,6 +536,33 @@ export default function CarritoPage() {
               </div>
             </div>
 
+            <div className="mt-4 rounded-lg border border-slate-100 bg-slate-50 p-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-slate-600">Saldo disponible</span>
+                {loadingSaldo ? (
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+                ) : (
+                  <span
+                    className={`font-semibold ${
+                      saldoSuficiente ? "text-emerald-600" : "text-red-600"
+                    }`}
+                  >
+                    {formatearSaldo(saldoDisponible)}
+                  </span>
+                )}
+              </div>
+              {!loadingSaldo && !saldoSuficiente && (
+                <p className="mt-2 text-xs text-red-600">
+                  Saldo insuficiente para completar la compra.
+                </p>
+              )}
+              {stockInsuficiente && (
+                <p className="mt-2 text-xs text-amber-600">
+                  Hay productos con existencias insuficientes.
+                </p>
+              )}
+            </div>
+
             <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
               <span className="text-slate-700 font-semibold">Total a pagar</span>
               <span className="text-slate-900 text-xl font-bold">
@@ -464,14 +571,32 @@ export default function CarritoPage() {
             </div>
 
             <button
-              disabled={!carrito || carrito.detalles.length === 0}
+              onClick={() => void handleComprar()}
+              disabled={
+                !carrito ||
+                carrito.detalles.length === 0 ||
+                comprando ||
+                stockInsuficiente ||
+                !saldoSuficiente
+              }
               className="mt-5 w-full py-2.5 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
             >
-              Comprar
+              {comprando ? "Procesando..." : "Comprar"}
             </button>
           </aside>
         </div>
       </main>
+
+      <SaldoInsuficienteDialog
+        isOpen={mostrarSaldoInsuficiente}
+        saldoActual={saldoDisponible}
+        montoRequerido={subtotalCarrito}
+        onClose={() => setMostrarSaldoInsuficiente(false)}
+        onRecargar={() => {
+          setMostrarSaldoInsuficiente(false);
+          router.push("/profile/pagos");
+        }}
+      />
     </div>
   );
 }

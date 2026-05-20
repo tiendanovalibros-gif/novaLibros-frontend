@@ -458,6 +458,27 @@ export default function ProfilePage() {
                   />
                 </button>
 
+                <Link href="/profile/pagos">
+                  <button className="flex w-full items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 text-left transition-all hover:border-blue-300 hover:bg-blue-50">
+                    <div className="rounded-lg bg-blue-100 p-2">
+                      <Iconify
+                        icon="solar:wallet-bold-duotone"
+                        className="text-blue-600"
+                        width={20}
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold text-slate-900">Pagos y Saldo</p>
+                      <p className="text-xs text-slate-600">Gestiona tus tarjetas y saldo</p>
+                    </div>
+                    <Iconify
+                      icon="solar:alt-arrow-right-linear"
+                      className="text-slate-400"
+                      width={20}
+                    />
+                  </button>
+                </Link>
+
                 <button className="flex w-full items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 text-left transition-all hover:border-orange-300 hover:bg-orange-50">
                   <div className="rounded-lg bg-orange-100 p-2">
                     <Iconify

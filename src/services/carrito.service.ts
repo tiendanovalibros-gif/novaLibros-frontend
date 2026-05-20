@@ -31,6 +31,18 @@ export interface AddItemCarritoPayload {
   cantidad: number;
 }
 
+export interface CheckoutCarritoPayload {
+  metodoEntrega?: string;
+  direccionEntrega?: string;
+}
+
+export interface CheckoutCarritoResponse {
+  pedidoId: string;
+  numeroOrden: string;
+  montoTotal: number | string;
+  saldoDisponible: number | string;
+}
+
 export async function obtenerMiCarrito(): Promise<CarritoResponse> {
   return apiFetch<CarritoResponse>("/carritos/me");
 }
@@ -57,5 +69,14 @@ export async function actualizarCantidadLibroMiCarrito(
   return apiFetch<CarritoResponse>(`/carritos/me/items/${idDetalle}`, {
     method: "PATCH",
     body: JSON.stringify({ cantidad }),
+  });
+}
+
+export async function checkoutMiCarrito(
+  payload: CheckoutCarritoPayload = {}
+): Promise<CheckoutCarritoResponse> {
+  return apiFetch<CheckoutCarritoResponse>("/carritos/me/checkout", {
+    method: "POST",
+    body: JSON.stringify(payload),
   });
 }
