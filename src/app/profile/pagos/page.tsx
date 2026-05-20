@@ -142,8 +142,6 @@ export default function PagosPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <MainNavbar />
-
       <main className="min-h-screen bg-slate-50 pt-8 pb-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-6 flex items-center gap-2 text-sm text-slate-600">
