@@ -876,7 +876,7 @@ export default function ManageBooks() {
           </div>
           <div className="flex gap-3">
             <a
-              href="/admin/tiendas"
+              href="/root/tiendas"
               className="flex items-center gap-2 px-4 py-2 border border-slate-300 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
             >
               Ir a tiendas

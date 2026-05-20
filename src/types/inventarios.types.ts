@@ -1,3 +1,34 @@
+export interface InventarioTiendaItem {
+  id: number;
+  idLibro: string;
+  idTienda: number;
+  cantidadDisponible: number;
+  cantidadBloqueada: number;
+  fechaActualizacion: string;
+  libro: {
+    id: string;
+    titulo: string;
+    isbn: string;
+    imagenPortada?: string | null;
+    precio: number;
+    estado: string;
+    autor: { id: number; nombre: string };
+    editorial: { id: number; nombre: string };
+  };
+}
+
+export interface InventarioTiendaResumen {
+  totalItems: number;
+  totalDisponible: number;
+  totalBloqueada: number;
+  librosAgotados: number;
+}
+
+export interface InventarioTiendaResponse {
+  resumen: InventarioTiendaResumen;
+  inventarios: InventarioTiendaItem[];
+}
+
 export interface LibroAgotado {
   idLibro: string;
   titulo: string;
