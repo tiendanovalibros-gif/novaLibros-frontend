@@ -104,13 +104,22 @@ export default function Header() {
               )}
 
               {user?.rol === "cliente" && (
-                <Link
-                  href="/carrito"
-                  className="px-3 py-2 rounded-full text-sm font-semibold text-slate-800 hover:bg-blue-50 transition-colors flex items-center gap-2"
-                  title="Carrito"
-                >
-                  <Iconify icon="material-symbols:shopping-cart-outline-rounded" />
-                </Link>
+                <>
+                  <Link
+                    href="/reservas"
+                    className="px-3 py-2 rounded-lg text-sm font-semibold text-slate-700 hover:bg-amber-50 transition-colors"
+                    title="Mis reservas"
+                  >
+                    Reservas
+                  </Link>
+                  <Link
+                    href="/carrito"
+                    className="px-3 py-2 rounded-full text-sm font-semibold text-slate-800 hover:bg-blue-50 transition-colors flex items-center gap-2"
+                    title="Carrito"
+                  >
+                    <Iconify icon="material-symbols:shopping-cart-outline-rounded" />
+                  </Link>
+                </>
               )}
 
               <button
@@ -165,6 +174,17 @@ export default function Header() {
                         <Iconify icon="gg:profile" width={20} />
                         <span className="font-medium">Mi Perfil</span>
                       </Link>
+
+                      {user?.rol === "cliente" && (
+                        <Link
+                          href="/reservas"
+                          onClick={() => setMenuUsuarioAbierto(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                        >
+                          <Iconify icon="solar:bookmark-bold" width={20} />
+                          <span className="font-medium">Mis reservas</span>
+                        </Link>
+                      )}
 
                       <button
                         onClick={() => {
@@ -228,6 +248,14 @@ export default function Header() {
                   className="w-full text-center py-2.5 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800"
                 >
                   Dashboard Admin
+                </Link>
+              )}
+              {user?.rol === "cliente" && (
+                <Link
+                  href="/reservas"
+                  className="w-full text-center py-2.5 border border-amber-200 bg-amber-50 rounded-lg text-sm font-semibold text-amber-900"
+                >
+                  Mis reservas
                 </Link>
               )}
               <Link

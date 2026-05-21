@@ -445,9 +445,17 @@ export default function CarritoPage() {
             </section>
 
             <section className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
                 <h2 className="text-slate-900 font-bold">Reservas activas</h2>
-                <span className="text-sm text-slate-500">{reservas.length} reserva(s)</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-slate-500">{reservas.length} reserva(s)</span>
+                  <Link
+                    href="/reservas"
+                    className="text-sm font-semibold text-blue-600 hover:underline"
+                  >
+                    Ver todas
+                  </Link>
+                </div>
               </div>
 
               {reservas.length === 0 ? (
