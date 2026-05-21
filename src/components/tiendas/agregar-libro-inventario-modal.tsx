@@ -14,6 +14,8 @@ interface LibroLite {
 interface Props {
   idTienda: number;
   nombreTienda: string;
+  /** IDs de libros que ya tienen fila en el inventario de esta tienda */
+  idsLibrosEnTienda: string[];
   onClose: () => void;
   onAdded: () => void;
 }
@@ -25,7 +27,13 @@ const CloseIcon = () => (
   </svg>
 );
 
-export default function AgregarLibroInventarioModal({ idTienda, nombreTienda, onClose, onAdded }: Props) {
+export default function AgregarLibroInventarioModal({
+  idTienda,
+  nombreTienda,
+  idsLibrosEnTienda,
+  onClose,
+  onAdded,
+}: Props) {
   const [libros, setLibros] = useState<LibroLite[]>([]);
   const [loadingLibros, setLoadingLibros] = useState(true);
   const [busqueda, setBusqueda] = useState("");
@@ -41,7 +49,10 @@ export default function AgregarLibroInventarioModal({ idTienda, nombreTienda, on
       .finally(() => setLoadingLibros(false));
   }, []);
 
+  const idsEnTienda = new Set(idsLibrosEnTienda);
+
   const librosFiltrados = libros.filter(l => {
+    if (idsEnTienda.has(l.id)) return false;
     const q = busqueda.trim().toLowerCase();
     if (!q) return true;
     return (
@@ -51,8 +62,18 @@ export default function AgregarLibroInventarioModal({ idTienda, nombreTienda, on
     );
   });
 
+  useEffect(() => {
+    if (idLibroSeleccionado && idsLibrosEnTienda.includes(idLibroSeleccionado)) {
+      setIdLibroSeleccionado("");
+    }
+  }, [idLibroSeleccionado, idsLibrosEnTienda]);
+
   const handleAgregar = async () => {
     if (!idLibroSeleccionado) { setError("Selecciona un libro"); return; }
+    if (idsEnTienda.has(idLibroSeleccionado)) {
+      setError("Este libro ya está en el inventario de la tienda. Usa «Ajustar» para cambiar la cantidad.");
+      return;
+    }
     if (cantidad < 1) { setError("La cantidad debe ser al menos 1"); return; }
     setSaving(true);
     setError("");
@@ -111,20 +132,33 @@ export default function AgregarLibroInventarioModal({ idTienda, nombreTienda, on
             <label className="block text-slate-700 text-sm font-semibold mb-1.5">Libro *</label>
             {loadingLibros ? (
               <p className="text-slate-500 text-sm">Cargando libros...</p>
+            ) : librosFiltrados.length === 0 ? (
+              <p className="text-slate-500 text-sm">
+                {libros.length === 0
+                  ? "No hay libros en el catálogo."
+                  : "Todos los libros del catálogo ya están en esta tienda. Usa «Ajustar» en la tabla para modificar cantidades."}
+              </p>
             ) : (
-              <select
-                value={idLibroSeleccionado}
-                onChange={e => setIdLibroSeleccionado(e.target.value)}
-                className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                size={6}
-              >
-                <option value="">Seleccionar libro...</option>
-                {librosFiltrados.map(l => (
-                  <option key={l.id} value={l.id}>
-                    {l.titulo}{l.autor ? ` — ${l.autor.nombre}` : ""} ({l.isbn})
-                  </option>
-                ))}
-              </select>
+              <>
+                <select
+                  value={idLibroSeleccionado}
+                  onChange={e => setIdLibroSeleccionado(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                  size={6}
+                >
+                  <option value="">Seleccionar libro...</option>
+                  {librosFiltrados.map(l => (
+                    <option key={l.id} value={l.id}>
+                      {l.titulo}{l.autor ? ` — ${l.autor.nombre}` : ""} ({l.isbn})
+                    </option>
+                  ))}
+                </select>
+                {idsLibrosEnTienda.length > 0 && (
+                  <p className="text-slate-500 text-xs mt-1">
+                    Solo se muestran libros que aún no están en esta tienda ({idsLibrosEnTienda.length} ya en inventario).
+                  </p>
+                )}
+              </>
             )}
           </div>
 
@@ -149,7 +183,7 @@ export default function AgregarLibroInventarioModal({ idTienda, nombreTienda, on
           </button>
           <button
             onClick={handleAgregar}
-            disabled={saving || !idLibroSeleccionado}
+            disabled={saving || !idLibroSeleccionado || librosFiltrados.length === 0}
             className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-60 transition-colors"
           >
             {saving ? "Agregando..." : "Agregar libro"}

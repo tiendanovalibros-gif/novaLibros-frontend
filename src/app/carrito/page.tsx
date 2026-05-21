@@ -12,7 +12,8 @@ import {
   quitarLibroDeMiCarrito,
   type CarritoResponse,
 } from "@/services/carrito.service";
-import SeleccionTiendaModal from "@/components/carrito/seleccion-tienda-modal";
+import SeleccionEntregaModal from "@/components/carrito/seleccion-entrega-modal";
+import type { CheckoutCarritoPayload } from "@/services/carrito.service";
 import { formatearSaldo, obtenerMiSaldo } from "@/services/pagos.service";
 import {
   cancelarReserva,
@@ -22,10 +23,13 @@ import {
 } from "@/services/reservas.service";
 import type { SaldoUsuario } from "@/types/pagos.types";
 import SaldoInsuficienteDialog from "@/components/pagos/saldo-insuficiente-dialog";
+import ConfirmCancelarReservaDialog, {
+  type ReservaCancelarPreview,
+} from "@/components/reservas/confirm-cancelar-reserva-dialog";
 
 export default function CarritoPage() {
   const router = useRouter();
-  const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const { user, isAuthenticated, loading: authLoading, updateProfile } = useAuth();
   const [loading, setLoading] = useState(true);
   const [loadingSaldo, setLoadingSaldo] = useState(true);
   const [error, setError] = useState("");
@@ -42,7 +46,8 @@ export default function CarritoPage() {
   const [convirtiendoReservaId, setConvirtiendoReservaId] = useState<string | null>(null);
   const [comprando, setComprando] = useState(false);
   const [mostrarSaldoInsuficiente, setMostrarSaldoInsuficiente] = useState(false);
-  const [mostrarSeleccionTienda, setMostrarSeleccionTienda] = useState(false);
+  const [mostrarSeleccionEntrega, setMostrarSeleccionEntrega] = useState(false);
+  const [reservaACancelar, setReservaACancelar] = useState<ReservaCancelarPreview | null>(null);
 
   const esCliente = user?.rol === "cliente";
 
@@ -187,13 +192,23 @@ export default function CarritoPage() {
     }
   };
 
-  const handleCancelarReserva = async (idReserva: string) => {
+  const abrirDialogoCancelarReserva = (preview: ReservaCancelarPreview) => {
+    setReservaACancelar(preview);
+    setError("");
+  };
+
+  const handleConfirmarCancelarReserva = async () => {
+    if (!reservaACancelar) return;
+
+    const idReserva = reservaACancelar.id;
     setCancelandoReservaId(idReserva);
     setError("");
     setAccionMensaje("");
+
     try {
       await cancelarReserva(idReserva);
       setReservas(prev => prev.filter(reserva => reserva.id !== idReserva));
+      setReservaACancelar(null);
       setAccionMensaje("Reserva cancelada correctamente");
     } catch (e: unknown) {
       setError((e as { message?: string })?.message ?? "No se pudo cancelar la reserva");
@@ -228,32 +243,35 @@ export default function CarritoPage() {
       return;
     }
 
-    setMostrarSeleccionTienda(true);
+    setMostrarSeleccionEntrega(true);
   };
 
-  const handleConfirmarTienda = async (idTienda: number) => {
+  const handleConfirmarEntrega = async (payload: CheckoutCarritoPayload) => {
     setComprando(true);
     setError("");
     try {
-      const respuesta = await checkoutMiCarrito({ idTienda });
-      setMostrarSeleccionTienda(false);
-      setAccionMensaje(
-        `Compra realizada. Orden ${respuesta.numeroOrden}${respuesta.nombreTienda ? ` — Recoge en ${respuesta.nombreTienda}` : ""}`
-      );
-      setSaldo(prev => ({
-        id: prev?.id ?? null,
-        idUsuario: prev?.idUsuario ?? user?.id ?? "",
-        saldoDisponible: respuesta.saldoDisponible,
-      }));
+      const direccionEntrega = payload.direccionEntrega?.trim();
+      if (direccionEntrega && user?.id) {
+        const direccionPerfil = (user.direccion ?? "").trim();
+        if (direccionEntrega !== direccionPerfil) {
+          await updateProfile(user.id, {
+            correo: user.correo,
+            direccion: direccionEntrega,
+            ...(user.telefono ? { telefono: user.telefono } : {}),
+          });
+        }
+      }
 
-      const [carritoData, inventariosData] = await Promise.all([
-        obtenerMiCarrito().catch(() => null),
-        apiFetch<Array<{ idLibro: string; cantidadDisponible: number }>>("/inventarios").catch(
-          () => []
-        ),
-      ]);
-      setCarrito(carritoData);
-      setInventarios(inventariosData);
+      const respuesta = await checkoutMiCarrito(payload);
+      setMostrarSeleccionEntrega(false);
+
+      try {
+        sessionStorage.setItem("novalibros_ultima_compra", JSON.stringify(respuesta));
+      } catch {
+        /* ignore */
+      }
+
+      router.push(`/carrito/confirmacion?pedido=${respuesta.pedidoId}`);
     } catch (e: unknown) {
       setError((e as { message?: string })?.message ?? "No se pudo completar la compra");
     } finally {
@@ -501,7 +519,15 @@ export default function CarritoPage() {
                                     : "Añadir a compra"}
                               </button>
                               <button
-                                onClick={() => void handleCancelarReserva(reserva.id)}
+                                onClick={() =>
+                                  abrirDialogoCancelarReserva({
+                                    id: reserva.id,
+                                    titulo,
+                                    isbn: item.libro?.isbn ?? "No disponible",
+                                    cantidad: item.cantidad,
+                                    horaExpiracion: reserva.horaExpiracion,
+                                  })
+                                }
                                 disabled={
                                   cancelandoReservaId === reserva.id ||
                                   convirtiendoReservaId === reserva.id
@@ -602,11 +628,24 @@ export default function CarritoPage() {
         }}
       />
 
-      <SeleccionTiendaModal
-        isOpen={mostrarSeleccionTienda}
+      <SeleccionEntregaModal
+        isOpen={mostrarSeleccionEntrega}
         comprando={comprando}
-        onClose={() => setMostrarSeleccionTienda(false)}
-        onConfirm={idTienda => void handleConfirmarTienda(idTienda)}
+        saldoDisponible={saldoDisponible}
+        direccionUsuario={user?.direccion}
+        onClose={() => setMostrarSeleccionEntrega(false)}
+        onConfirm={payload => void handleConfirmarEntrega(payload)}
+      />
+
+      <ConfirmCancelarReservaDialog
+        isOpen={reservaACancelar !== null}
+        reserva={reservaACancelar}
+        isLoading={reservaACancelar !== null && cancelandoReservaId === reservaACancelar.id}
+        onConfirm={() => void handleConfirmarCancelarReserva()}
+        onClose={() => {
+          if (cancelandoReservaId) return;
+          setReservaACancelar(null);
+        }}
       />
     </div>
   );

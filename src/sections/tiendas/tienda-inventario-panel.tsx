@@ -388,6 +388,7 @@ export default function TiendaInventarioPanel({ tienda }: Props) {
         <AgregarLibroInventarioModal
           idTienda={tienda.id}
           nombreTienda={tienda.nombre}
+          idsLibrosEnTienda={inventarios.map(inv => inv.idLibro)}
           onClose={() => setActionModal(null)}
           onAdded={() => { setActionModal(null); cargar(); }}
         />
