@@ -9,6 +9,7 @@ import {
   type OpcionMetodoEntrega,
   type TiendaRecogidaOpcion,
 } from "@/services/carrito.service";
+import TiendasRecogidaMapDynamic from "@/components/map/tiendas-recogida-map-dynamic";
 
 interface Props {
   isOpen: boolean;
@@ -30,13 +31,6 @@ function formatDistancia(km: number | null): string | null {
   if (km === null) return null;
   if (km < 1) return `${Math.round(km * 1000)} m`;
   return `${km.toFixed(1)} km`;
-}
-
-function getMapsUrl(tienda: TiendaRecogidaOpcion): string {
-  const query = encodeURIComponent(
-    `${tienda.nombre}, ${tienda.direccion}, ${tienda.ciudad ?? "Colombia"}`
-  );
-  return `https://www.google.com/maps/search/?api=1&query=${query}&ll=${tienda.latitud},${tienda.longitud}`;
 }
 
 function formatPrecio(n: number) {
@@ -193,7 +187,7 @@ export default function SeleccionEntregaModal({
   return (
     <div className="fixed inset-0 z-[70] bg-slate-900/55 backdrop-blur-[2px] flex items-end sm:items-center justify-center p-0 sm:p-6">
       <div
-        className="w-full sm:max-w-xl bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92dvh]"
+        className="w-full sm:max-w-2xl bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92dvh]"
         onClick={e => e.stopPropagation()}
       >
         <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between shrink-0">
@@ -290,10 +284,28 @@ export default function SeleccionEntregaModal({
               </div>
 
               {metodoActivo?.codigo === "tienda" && metodoActivo.disponible && (
-                <div className="space-y-2 pt-1 border-t border-slate-100">
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide pt-2">
-                    Tienda de recogida
-                  </p>
+                <div className="space-y-3 pt-1 border-t border-slate-100">
+                  <div>
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide pt-2">
+                      Tienda de recogida
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Toca un marcador en el mapa o elige en la lista. Verde = disponible, azul =
+                      seleccionada.
+                    </p>
+                  </div>
+
+                  <TiendasRecogidaMapDynamic
+                    tiendas={tiendas}
+                    tiendaSeleccionada={tiendaSeleccionada}
+                    userCoords={coords}
+                    onSelectTienda={id => {
+                      const t = tiendas.find(x => x.id === id);
+                      if (t?.puedeCompletarCarrito) setTiendaSeleccionada(id);
+                    }}
+                  />
+
+                  <div className="space-y-2 max-h-[200px] overflow-y-auto pr-0.5">
                   {tiendas.map(tienda => {
                     const seleccionada = tiendaSeleccionada === tienda.id;
                     const disponible = tienda.puedeCompletarCarrito;
@@ -335,19 +347,10 @@ export default function SeleccionEntregaModal({
                           {tienda.direccionNormalizada || tienda.direccion}
                           {tienda.ciudad ? `, ${tienda.ciudad}` : ""}
                         </p>
-                        <a
-                          href={getMapsUrl(tienda)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={e => e.stopPropagation()}
-                          className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline mt-1"
-                        >
-                          <Iconify icon="solar:map-point-bold" width={12} />
-                          Ver en mapa
-                        </a>
                       </button>
                     );
                   })}
+                  </div>
                 </div>
               )}
 

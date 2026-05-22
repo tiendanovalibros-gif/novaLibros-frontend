@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Iconify from "@/components/iconify/iconify";
 import { obtenerOpcionesRecogida, type TiendaRecogidaOpcion } from "@/services/carrito.service";
+import TiendasRecogidaMapDynamic from "@/components/map/tiendas-recogida-map-dynamic";
 
 interface SeleccionTiendaModalProps {
   isOpen: boolean;
@@ -17,13 +18,6 @@ function formatDistancia(km: number | null): string | null {
   return `${km.toFixed(1)} km`;
 }
 
-function getMapsUrl(tienda: TiendaRecogidaOpcion): string {
-  const query = encodeURIComponent(
-    `${tienda.nombre}, ${tienda.direccion}, ${tienda.ciudad ?? "Colombia"}`
-  );
-  return `https://www.google.com/maps/search/?api=1&query=${query}&ll=${tienda.latitud},${tienda.longitud}`;
-}
-
 export default function SeleccionTiendaModal({
   isOpen,
   comprando,
@@ -35,6 +29,7 @@ export default function SeleccionTiendaModal({
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState("");
   const [sinUbicacion, setSinUbicacion] = useState(false);
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -43,9 +38,11 @@ export default function SeleccionTiendaModal({
     setTiendaSeleccionada(null);
     setError("");
     setSinUbicacion(false);
+    setCoords(null);
     setCargando(true);
 
     const cargarConUbicacion = (lat: number, lng: number) => {
+      setCoords({ lat, lng });
       obtenerOpcionesRecogida(lat, lng)
         .then(data => {
           setTiendas(data);
@@ -88,7 +85,7 @@ export default function SeleccionTiendaModal({
   return (
     <div className="fixed inset-0 z-[70] bg-slate-900/55 backdrop-blur-[2px] flex items-end sm:items-center justify-center p-0 sm:p-6">
       <div
-        className="w-full sm:max-w-lg bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90dvh]"
+        className="w-full sm:max-w-2xl bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90dvh]"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
@@ -141,6 +138,24 @@ export default function SeleccionTiendaModal({
                 </div>
               )}
 
+              {tiendas.length > 0 && (
+                <>
+                  <p className="text-xs text-slate-500 mb-2">
+                    Selecciona en el mapa o en la lista. El punto azul es tu ubicación.
+                  </p>
+                  <TiendasRecogidaMapDynamic
+                    tiendas={tiendas}
+                    tiendaSeleccionada={tiendaSeleccionada}
+                    userCoords={coords}
+                    onSelectTienda={id => {
+                      const t = tiendas.find(x => x.id === id);
+                      if (t?.puedeCompletarCarrito) setTiendaSeleccionada(id);
+                    }}
+                  />
+                </>
+              )}
+
+              <div className="space-y-2 max-h-[200px] overflow-y-auto">
               {tiendas.map(tienda => {
                 const seleccionada = tiendaSeleccionada === tienda.id;
                 const disponible = tienda.puedeCompletarCarrito;
@@ -204,21 +219,12 @@ export default function SeleccionTiendaModal({
                           </p>
                         )}
 
-                        <a
-                          href={getMapsUrl(tienda)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={e => e.stopPropagation()}
-                          className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline mt-1"
-                        >
-                          <Iconify icon="solar:map-point-bold" width={12} />
-                          Ver en mapa
-                        </a>
                       </div>
                     </div>
                   </button>
                 );
               })}
+              </div>
             </>
           )}
         </div>
