@@ -14,6 +14,13 @@ export interface TiendaPayload {
   nombre: string
   direccion: string
   ciudad: string
+  latitud?: number
+  longitud?: number
+}
+
+export interface TiendaUbicacionPayload {
+  latitud: number
+  longitud: number
 }
 
 export interface ValidateDireccionPayload {
@@ -43,6 +50,16 @@ export function crearTienda(payload: TiendaPayload): Promise<Tienda> {
 
 export function editarTienda(id: number, payload: TiendaPayload): Promise<Tienda> {
   return apiFetch<Tienda>(`/tiendas/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  })
+}
+
+export function actualizarUbicacionTienda(
+  id: number,
+  payload: TiendaUbicacionPayload
+): Promise<Tienda> {
+  return apiFetch<Tienda>(`/tiendas/${id}/ubicacion`, {
     method: 'PATCH',
     body: JSON.stringify(payload),
   })

@@ -16,6 +16,15 @@ import {
   encontrarDepartamentoPorCiudad,
   normalizeUbicacionTexto,
 } from "@/constants/colombia-locations.constants";
+import dynamic from "next/dynamic";
+
+const UbicacionPickerMap = dynamic(() => import("@/components/map/ubicacion-picker-map"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-[220px] rounded-xl border border-slate-200 bg-slate-100 animate-pulse" />
+  ),
+});
+import { MAP_DEFAULT_CENTER } from "@/lib/map-constants";
 
 type DialogMode = "create" | "edit" | "delete" | null;
 
@@ -73,7 +82,14 @@ const TrashIcon = () => (
 );
 
 const SearchIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    className="block shrink-0"
+    aria-hidden
+  >
     <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2" />
     <line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
   </svg>
@@ -129,7 +145,7 @@ const Modal = ({
   <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
     <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
     <div
-      className="relative bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+      className="relative bg-white rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto"
       onClick={e => e.stopPropagation()}
     >
       <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 sticky top-0 bg-white rounded-t-2xl z-10">
@@ -148,10 +164,19 @@ const Modal = ({
 
 interface TiendaCrudPanelProps {
   tiendaSeleccionada: Tienda | null;
-  onSeleccionar: (tienda: Tienda) => void;
+  onSeleccionar: (tienda: Tienda | null) => void;
+  onTiendasChange?: (tiendas: Tienda[]) => void;
+  tiendaEditarSolicitada?: Tienda | null;
+  onTiendaEditarConsumida?: () => void;
 }
 
-export default function TiendaCrudPanel({ tiendaSeleccionada, onSeleccionar }: TiendaCrudPanelProps) {
+export default function TiendaCrudPanel({
+  tiendaSeleccionada,
+  onSeleccionar,
+  onTiendasChange,
+  tiendaEditarSolicitada,
+  onTiendaEditarConsumida,
+}: TiendaCrudPanelProps) {
   const [tiendas, setTiendas] = useState<Tienda[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -164,6 +189,7 @@ export default function TiendaCrudPanel({ tiendaSeleccionada, onSeleccionar }: T
   const [saving, setSaving] = useState(false);
   const [validatingAddress, setValidatingAddress] = useState(false);
   const [validationResult, setValidationResult] = useState<ValidateDireccionResponse | null>(null);
+  const [coordsMapa, setCoordsMapa] = useState<{ lat: number; lng: number } | null>(null);
 
   const cargarTiendas = async () => {
     setLoading(true);
@@ -171,6 +197,7 @@ export default function TiendaCrudPanel({ tiendaSeleccionada, onSeleccionar }: T
     try {
       const data = await listarTiendas();
       setTiendas(data);
+      onTiendasChange?.(data);
     } catch (err) {
       setError(parseApiError(err, "Error al cargar tiendas"));
     } finally {
@@ -181,6 +208,12 @@ export default function TiendaCrudPanel({ tiendaSeleccionada, onSeleccionar }: T
   useEffect(() => {
     cargarTiendas();
   }, []);
+
+  useEffect(() => {
+    if (!tiendaEditarSolicitada) return;
+    abrirEditar(tiendaEditarSolicitada);
+    onTiendaEditarConsumida?.();
+  }, [tiendaEditarSolicitada]);
 
   const tiendasFiltradas = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
@@ -243,6 +276,7 @@ export default function TiendaCrudPanel({ tiendaSeleccionada, onSeleccionar }: T
     setTiendaActual(null);
     setFormError("");
     setValidationResult(null);
+    setCoordsMapa(null);
   };
 
   const abrirCrear = () => {
@@ -263,6 +297,7 @@ export default function TiendaCrudPanel({ tiendaSeleccionada, onSeleccionar }: T
     });
     setFormError("");
     setValidationResult(null);
+    setCoordsMapa({ lat: tienda.latitud, lng: tienda.longitud });
     setDialogMode("edit");
   };
 
@@ -294,6 +329,7 @@ export default function TiendaCrudPanel({ tiendaSeleccionada, onSeleccionar }: T
         ciudad: form.ciudad.trim(),
       });
       setValidationResult(result);
+      setCoordsMapa({ lat: result.latitud, lng: result.longitud });
     } catch (err) {
       setValidationResult(null);
       setFormError(parseApiError(err, "No se pudo validar la dirección"));
@@ -311,8 +347,13 @@ export default function TiendaCrudPanel({ tiendaSeleccionada, onSeleccionar }: T
         nombre: form.nombre.trim(),
         direccion: form.direccion.trim(),
         ciudad: form.ciudad.trim(),
+        ...(coordsMapa ? { latitud: coordsMapa.lat, longitud: coordsMapa.lng } : {}),
       });
-      setTiendas(prev => [nueva, ...prev]);
+      setTiendas(prev => {
+        const next = [nueva, ...prev];
+        onTiendasChange?.(next);
+        return next;
+      });
       cerrarDialogo();
     } catch (err) {
       setFormError(parseApiError(err, "Error al crear la tienda"));
@@ -330,8 +371,13 @@ export default function TiendaCrudPanel({ tiendaSeleccionada, onSeleccionar }: T
         nombre: form.nombre.trim(),
         direccion: form.direccion.trim(),
         ciudad: form.ciudad.trim(),
+        ...(coordsMapa ? { latitud: coordsMapa.lat, longitud: coordsMapa.lng } : {}),
       });
-      setTiendas(prev => prev.map(t => (t.id === tiendaActual.id ? actualizada : t)));
+      setTiendas(prev => {
+        const next = prev.map(t => (t.id === tiendaActual.id ? actualizada : t));
+        onTiendasChange?.(next);
+        return next;
+      });
       if (tiendaSeleccionada?.id === tiendaActual.id) {
         onSeleccionar(actualizada);
       }
@@ -349,9 +395,13 @@ export default function TiendaCrudPanel({ tiendaSeleccionada, onSeleccionar }: T
     setFormError("");
     try {
       await eliminarTienda(tiendaActual.id);
-      setTiendas(prev => prev.filter(t => t.id !== tiendaActual.id));
+      setTiendas(prev => {
+        const next = prev.filter(t => t.id !== tiendaActual.id);
+        onTiendasChange?.(next);
+        return next;
+      });
       if (tiendaSeleccionada?.id === tiendaActual.id) {
-        onSeleccionar(tiendas.find(t => t.id !== tiendaActual.id) ?? (null as unknown as Tienda));
+        onSeleccionar(tiendas.find(t => t.id !== tiendaActual.id) ?? null);
       }
       cerrarDialogo();
     } catch (err) {
@@ -432,11 +482,28 @@ export default function TiendaCrudPanel({ tiendaSeleccionada, onSeleccionar }: T
           <p className="mt-1">
             Ciudad detectada: <span className="font-semibold">{validationResult.ciudadDetectada || "No detectada"}</span>
           </p>
-          <p className="mt-1">
-            Coordenadas: <span className="font-semibold">{validationResult.latitud}, {validationResult.longitud}</span>
-          </p>
           <p className="mt-1 break-all">Normalizada: {validationResult.direccionNormalizada}</p>
           <p className="mt-1 text-xs">Proveedor: {validationResult.proveedor}</p>
+        </div>
+      )}
+      {!readOnly && coordsMapa && (
+        <div>
+          <p className="text-slate-700 text-sm font-semibold mb-2">Ubicación en el mapa</p>
+          <UbicacionPickerMap
+            lat={coordsMapa.lat}
+            lng={coordsMapa.lng}
+            onChange={(lat, lng) => setCoordsMapa({ lat, lng })}
+          />
+        </div>
+      )}
+      {!readOnly && dialogMode === "edit" && !coordsMapa && tiendaActual && (
+        <div>
+          <p className="text-slate-700 text-sm font-semibold mb-2">Ubicación actual</p>
+          <UbicacionPickerMap
+            lat={tiendaActual.latitud || MAP_DEFAULT_CENTER[0]}
+            lng={tiendaActual.longitud || MAP_DEFAULT_CENTER[1]}
+            onChange={(lat, lng) => setCoordsMapa({ lat, lng })}
+          />
         </div>
       )}
     </div>
@@ -456,15 +523,18 @@ export default function TiendaCrudPanel({ tiendaSeleccionada, onSeleccionar }: T
       </div>
 
       <div className="relative mb-3">
-        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+        <span
+          className="pointer-events-none absolute inset-y-0 left-0 z-10 flex w-10 items-center justify-center text-slate-400"
+          aria-hidden
+        >
           <SearchIcon />
-        </div>
+        </span>
         <input
           type="text"
           value={busqueda}
           onChange={e => setBusqueda(e.target.value)}
           placeholder="Buscar tienda..."
-          className="w-full pl-9 pr-4 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+          className="relative z-0 w-full pl-10 pr-4 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
         />
       </div>
 
@@ -503,6 +573,10 @@ export default function TiendaCrudPanel({ tiendaSeleccionada, onSeleccionar }: T
                       ? `${tienda.ciudad} · `
                       : ""}
                     {tienda.direccion}
+                  </p>
+                  <p className="text-slate-400 text-[10px] mt-0.5 flex items-center gap-1">
+                    <span>📍</span>
+                    {Number(tienda.latitud).toFixed(4)}, {Number(tienda.longitud).toFixed(4)}
                   </p>
                 </div>
                 <div className="flex gap-1 shrink-0">
