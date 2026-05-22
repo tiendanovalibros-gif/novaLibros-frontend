@@ -111,6 +111,17 @@ const UNKNOWN_BRAND: CardBrandConfig = {
 
 const SANDBOX_CARD_APPROVED = "4242424242424242";
 const SANDBOX_CARD_DECLINED = "4343434343434343";
+const SANDBOX_CARD_LENGTH = 16;
+
+const isSandboxPrefix = (digits: string) =>
+  digits.startsWith("4242") || digits.startsWith("4343");
+
+const isSandboxCardNumber = (digits: string) =>
+  digits === SANDBOX_CARD_APPROVED || digits === SANDBOX_CARD_DECLINED;
+
+/** Visa admite hasta 19 dígitos; en sandbox solo usamos tarjetas de 16. */
+const getInputMaxLength = (digits: string, brand: CardBrandConfig) =>
+  isSandboxPrefix(digits) ? SANDBOX_CARD_LENGTH : brand.maxLength;
 
 const detectBrand = (digits: string): CardBrandConfig => {
   if (!digits) return UNKNOWN_BRAND;
@@ -202,8 +213,8 @@ export default function AddTarjetaForm({
   }, [isOpen]);
 
   const brand = useMemo(() => detectBrand(numeroTarjeta), [numeroTarjeta]);
-  const isSandboxCard =
-    numeroTarjeta === SANDBOX_CARD_APPROVED || numeroTarjeta === SANDBOX_CARD_DECLINED;
+  const isSandboxCard = isSandboxCardNumber(numeroTarjeta);
+  const inputMaxLength = getInputMaxLength(numeroTarjeta, brand);
 
   useEffect(() => {
     if (!numeroTarjeta) return;
@@ -223,8 +234,14 @@ export default function AddTarjetaForm({
 
     if (!numeroTarjeta.trim()) {
       nextErrors.numeroTarjeta = "Ingresa el numero de la tarjeta";
+    } else if (isSandboxPrefix(numeroTarjeta) && numeroTarjeta.length !== SANDBOX_CARD_LENGTH) {
+      nextErrors.numeroTarjeta =
+        numeroTarjeta.length > SANDBOX_CARD_LENGTH
+          ? "La tarjeta sandbox tiene 16 digitos; borra los digitos de mas."
+          : "Completa los 16 digitos de la tarjeta sandbox.";
     } else if (!isSandboxCard) {
-      nextErrors.numeroTarjeta = "Sandbox activo: usa 4242 4242 4242 4242 o 4343 4343 4343 4343";
+      nextErrors.numeroTarjeta =
+        "Solo tarjetas de prueba: 4242 4242 4242 4242 (aprueba) o 4343 4343 4343 4343 (rechaza).";
     } else if (brand.id === "desconocida") {
       nextErrors.numeroTarjeta = "No se reconoce la franquicia de la tarjeta";
     } else if (!brand.lengths.includes(numeroTarjeta.length)) {
@@ -350,9 +367,10 @@ export default function AddTarjetaForm({
               onChange={event => {
                 const digits = event.target.value.replace(/\D/g, "");
                 const detected = detectBrand(digits);
-                setNumeroTarjeta(digits.slice(0, detected.maxLength));
+                setNumeroTarjeta(digits.slice(0, getInputMaxLength(digits, detected)));
                 setFieldErrors(prev => ({ ...prev, numeroTarjeta: undefined }));
               }}
+              maxLength={inputMaxLength + Math.ceil(inputMaxLength / 4)}
               placeholder="1234 5678 9012 3456"
               className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 outline-none focus:border-blue-500"
             />
@@ -361,8 +379,30 @@ export default function AddTarjetaForm({
               {buildFormatHint(brand)}
             </p>
             <p className="mt-1 text-xs text-slate-500">
-              Sandbox activa: 4242 4242 4242 4242 aprueba, 4343 4343 4343 4343 rechaza.
+              Sandbox: exactamente 16 digitos. 4242… aprueba recargas; 4343… las rechaza.
             </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setNumeroTarjeta(SANDBOX_CARD_APPROVED);
+                  setFieldErrors(prev => ({ ...prev, numeroTarjeta: undefined }));
+                }}
+                className="rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-800 hover:bg-emerald-100"
+              >
+                Usar 4242… (aprueba)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setNumeroTarjeta(SANDBOX_CARD_DECLINED);
+                  setFieldErrors(prev => ({ ...prev, numeroTarjeta: undefined }));
+                }}
+                className="rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-900 hover:bg-amber-100"
+              >
+                Usar 4343… (rechaza)
+              </button>
+            </div>
             {fieldErrors.numeroTarjeta && (
               <p className="mt-1 text-xs text-red-600">{fieldErrors.numeroTarjeta}</p>
             )}
