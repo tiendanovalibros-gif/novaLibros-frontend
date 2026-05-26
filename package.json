@@ -18,6 +18,8 @@
     "@emotion/styled": "11.14.1",
     "@iconify/react": "6.0.2",
     "@mui/material": "7.3.9",
+    "@stripe/react-stripe-js": "6.4.0",
+    "@stripe/stripe-js": "9.6.0",
     "leaflet": "1.9.4",
     "next": "14.2.35",
     "react": "^18",

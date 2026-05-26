@@ -6,6 +6,8 @@ import type {
   RegistrarTarjetaPayload,
   RecargarSaldoPayload,
   TipoMovimiento,
+  SetupIntentResponse,
+  ConfirmarTarjetaPayload,
 } from "@/types/pagos.types";
 
 export async function obtenerMisMetodosPago(): Promise<MetodoPago[]> {
@@ -37,6 +39,29 @@ export async function recargarSaldo(payload: RecargarSaldoPayload): Promise<Sald
 export async function obtenerMisMovimientos(tipo?: TipoMovimiento): Promise<MovimientoSaldo[]> {
   const query = tipo ? `?tipo=${tipo}` : "";
   return apiFetch<MovimientoSaldo[]>(`/movimientos-saldo/me${query}`);
+}
+
+/**
+ * Solicita un SetupIntent al backend para iniciar el flujo de registro de tarjeta.
+ * Devuelve el clientSecret que se pasa a Stripe Elements.
+ */
+export async function crearSetupIntent(): Promise<SetupIntentResponse> {
+  return apiFetch<SetupIntentResponse>("/metodos-pago/setup-intent", {
+    method: "POST",
+  });
+}
+
+/**
+ * Confirma y guarda la tarjeta en BD después de que Stripe procesó el SetupIntent.
+ * Se llama con el paymentMethodId que devuelve stripe.confirmCardSetup().
+ */
+export async function confirmarTarjetaStripe(
+  payload: ConfirmarTarjetaPayload
+): Promise<MetodoPago> {
+  return apiFetch<MetodoPago>("/metodos-pago/confirmar", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }
 
 export function formatearSaldo(valor: number | string): string {

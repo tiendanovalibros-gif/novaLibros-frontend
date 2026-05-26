@@ -38,4 +38,14 @@ export interface RecargarSaldoPayload {
   idMetodoPago: number;
 }
 
+export interface SetupIntentResponse {
+  clientSecret: string;
+}
+
+export interface ConfirmarTarjetaPayload {
+  paymentMethodId: string;
+  tipo: TipoTarjeta;
+  titular: string;
+}
+
 export const MONTOS_RECARGA = [10000, 20000, 50000, 100000, 200000, 500000];

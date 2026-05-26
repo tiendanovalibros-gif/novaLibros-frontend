@@ -38,14 +38,13 @@ export default function PagosPage() {
     loadingSaldo,
     loadingMovimientos,
     error,
-    agregarTarjeta,
     borrarTarjeta,
     hacerRecarga,
+    recargarDatos,
   } = usePagos();
 
   const [mounted, setMounted] = useState(false);
   const [mostrarAddTarjeta, setMostrarAddTarjeta] = useState(false);
-  const [loadingTarjeta, setLoadingTarjeta] = useState(false);
   const [pendienteRecarga, setPendienteRecarga] = useState<PendienteRecarga | null>(null);
   const [loadingRecarga, setLoadingRecarga] = useState(false);
   const [recargaExitosa, setRecargaExitosa] = useState<{
@@ -112,17 +111,6 @@ export default function PagosPage() {
 
   const handleRecargaExitosa = (nuevoSaldo: SaldoUsuario, monto: number) => {
     setRecargaExitosa({ monto, nuevoSaldo });
-  };
-
-  const handleAgregarTarjeta = async (payload: RegistrarTarjetaPayload) => {
-    setLoadingTarjeta(true);
-    try {
-      await agregarTarjeta(payload);
-    } catch (err) {
-      throw err;
-    } finally {
-      setLoadingTarjeta(false);
-    }
   };
 
   if (!mounted || loading) {
@@ -200,10 +188,11 @@ export default function PagosPage() {
 
       <AddTarjetaForm
         isOpen={mostrarAddTarjeta}
-        idUsuario={user?.id ?? ""}
-        isLoading={loadingTarjeta}
         onClose={() => setMostrarAddTarjeta(false)}
-        onSubmit={handleAgregarTarjeta}
+        onSuccess={() => {
+          recargarDatos();
+          setMostrarAddTarjeta(false);
+        }}
       />
 
       <ConfirmRecargaDialog
