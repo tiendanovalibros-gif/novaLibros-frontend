@@ -99,7 +99,7 @@ export default function HistorialRecargasSection({
           <p className="text-sm font-semibold text-slate-700">No hay movimientos registrados</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-3 h-[320px] overflow-y-auto no-scrollbar pr-1">
           {movimientosFiltrados.map(mov => {
             const config = iconosPorTipo[mov.tipoMovimiento];
             const esPositivo = mov.tipoMovimiento !== "compra";
