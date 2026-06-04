@@ -18,17 +18,21 @@
     "@emotion/styled": "11.14.1",
     "@iconify/react": "6.0.2",
     "@mui/material": "7.3.9",
+    "@react-three/drei": "9.117.3",
+    "@react-three/fiber": "8.17.10",
     "leaflet": "1.9.4",
     "next": "14.2.35",
     "react": "^18",
     "react-dom": "^18",
-    "react-leaflet": "4.2.1"
+    "react-leaflet": "4.2.1",
+    "three": "0.169.0"
   },
   "devDependencies": {
     "@types/leaflet": "1.9.21",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@types/three": "0.169.0",
     "eslint": "^8",
     "eslint-config-next": "14.2.35",
     "eslint-config-prettier": "^10.1.8",

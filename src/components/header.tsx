@@ -80,7 +80,6 @@ export default function Header() {
           >
             Tiendas
           </Link>
-
           {isAuthenticated ? (
             <>
               {user?.rol === "administrador" ? (
@@ -256,7 +255,6 @@ export default function Header() {
           >
             Tiendas
           </Link>
-
           {isAuthenticated ? (
             <>
               {(user?.rol === "root" || user?.rol === "administrador") && (

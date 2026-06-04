@@ -1,9 +1,12 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { apiFetch } from "@/services/api.client";
 import { obtenerLibrosAgotados } from "@/services/inventarios.service";
 import { agregarLibroAMiCarrito } from "@/services/carrito.service";
+import { registrarBusqueda } from "@/services/recomendaciones.service";
+import CatalogoRecomendaciones from "@/sections/catalogo/catalogo-recomendaciones";
+import type { LibroCatalogo } from "@/sections/catalogo/catalogo-recomendaciones";
 import { useAuth } from "@/context/auth.context";
 import Link from "next/link";
 import Iconify from "@/components/iconify/iconify";
@@ -298,6 +301,21 @@ export default function CataloguePage() {
 
   const { user, isAuthenticated } = useAuth();
 
+  // Debounced search registration for the recommendation engine
+  const busquedaTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const registrarBusquedaDebounced = useCallback(
+    (criterio: string) => {
+      if (!isAuthenticated || user?.rol !== "cliente") return;
+      if (busquedaTimerRef.current) clearTimeout(busquedaTimerRef.current);
+      busquedaTimerRef.current = setTimeout(() => {
+        if (criterio.trim().length > 2) {
+          registrarBusqueda(criterio.trim()).catch(() => undefined);
+        }
+      }, 600);
+    },
+    [isAuthenticated, user?.rol],
+  );
+
   const nombreAutor = (id: number) => autores.find(a => a.id === id)?.nombre ?? `Autor #${id}`;
   const nombreGenero = (id: number) => generos.find(g => g.id === id)?.nombre ?? `Género #${id}`;
   const nombreEditorial = (id: number) =>
@@ -472,6 +490,21 @@ export default function CataloguePage() {
     setOrden("relevancia");
   };
   const hayFiltros = busqueda || generoActivo !== "Todos" || rangoIdx !== 0;
+  const mostrarRecomendaciones =
+    isAuthenticated && user?.rol === "cliente" && !hayFiltros && !loading;
+
+  const renderBookCard = (libro: LibroCatalogo) => (
+    <BookCard
+      libro={libro}
+      nombreAutor={nombreAutor}
+      nombreGenero={nombreGenero}
+      isAuthenticated={isAuthenticated}
+      userRole={user?.rol ?? null}
+      estadoVisual={estadoVisualLibro(libro)}
+      cantidadDisponible={cantidadDisponibleLibro(libro.id)}
+      onRequestAddToCart={handleOpenAddToCartDialog}
+    />
+  );
 
   const colorHero = useMemo(() => {
     if (librosNuevos.length === 0) return "#334155";
@@ -607,6 +640,32 @@ export default function CataloguePage() {
 
       {/* ── Main ── */}
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-8">
+        {/* Barra de búsqueda del catálogo */}
+        <div className="relative mb-5">
+          <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none">
+            <Iconify icon="material-symbols:search-rounded" width={20} className="text-slate-400" />
+          </div>
+          <input
+            type="text"
+            value={busqueda}
+            onChange={e => {
+              const v = e.target.value;
+              setBusqueda(v);
+              registrarBusquedaDebounced(v);
+            }}
+            placeholder="Filtrar por título, autor, ISBN, género..."
+            className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all"
+          />
+          {busqueda && (
+            <button
+              onClick={() => setBusqueda("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+            >
+              <Iconify icon="mingcute:close-line" width={16} />
+            </button>
+          )}
+        </div>
+
         {/* Filtros género */}
         <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
           <span className="text-slate-600 text-sm font-semibold shrink-0">Género:</span>
@@ -673,18 +732,27 @@ export default function CataloguePage() {
           </button>
         </div>
 
-        {/* Contador */}
+        {/* Recomendaciones (primera sección, solo cliente sin filtros activos) */}
+        <CatalogoRecomendaciones
+          visible={mostrarRecomendaciones}
+          renderBookCard={renderBookCard}
+        />
+
+        {/* Catálogo completo */}
         {!loading && !error && (
-          <p className="text-slate-500 text-sm mb-4">
-            <span className="text-slate-900 font-bold">{librosFiltrados.length}</span>{" "}
-            {librosFiltrados.length === 1 ? "libro encontrado" : "libros encontrados"}
-            {busqueda && (
-              <span>
-                {" "}
-                para &quot;<strong className="text-slate-800">{busqueda}</strong>&quot;
-              </span>
-            )}
-          </p>
+          <div className="mb-4">
+            <h2 className="text-lg sm:text-xl font-bold text-slate-900">Catálogo</h2>
+            <p className="text-slate-500 text-sm mt-1">
+              <span className="text-slate-900 font-bold">{librosFiltrados.length}</span>{" "}
+              {librosFiltrados.length === 1 ? "libro encontrado" : "libros encontrados"}
+              {busqueda && (
+                <span>
+                  {" "}
+                  para &quot;<strong className="text-slate-800">{busqueda}</strong>&quot;
+                </span>
+              )}
+            </p>
+          </div>
         )}
 
         {/* Grid */}

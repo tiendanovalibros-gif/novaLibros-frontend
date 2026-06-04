@@ -479,7 +479,10 @@ export default function ProfilePage() {
                   </button>
                 </Link>
 
-                <button className="flex w-full items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 text-left transition-all hover:border-orange-300 hover:bg-orange-50">
+                <Link
+                  href="/#preferencias"
+                  className="flex w-full items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 text-left transition-all hover:border-orange-300 hover:bg-orange-50"
+                >
                   <div className="rounded-lg bg-orange-100 p-2">
                     <Iconify
                       icon="solar:heart-bold-duotone"
@@ -488,15 +491,15 @@ export default function ProfilePage() {
                     />
                   </div>
                   <div className="flex-1">
-                    <p className="font-semibold text-slate-900">Gestionar Preferencias</p>
-                    <p className="text-xs text-slate-600">Actualiza tus géneros favoritos</p>
+                    <p className="font-semibold text-slate-900">Géneros favoritos</p>
+                    <p className="text-xs text-slate-600">Configura tus preferencias en el inicio</p>
                   </div>
                   <Iconify
                     icon="solar:alt-arrow-right-linear"
                     className="text-slate-400"
                     width={20}
                   />
-                </button>
+                </Link>
               </div>
             </div>
           </div>

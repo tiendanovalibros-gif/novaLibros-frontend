@@ -625,6 +625,15 @@ export default function BookDetailPage() {
                       />
                       {agregando ? "Agregando..." : "Agregar al carrito"}
                     </button>
+
+                    {/* Ver en realidad aumentada */}
+                    <Link
+                      href={`/realidad-aumentada/${libro.id}`}
+                      className="flex items-center justify-center gap-2 px-5 py-2.5 border-2 border-slate-300 text-slate-700 rounded-xl text-sm font-semibold hover:bg-slate-50 hover:border-slate-400 transition-colors"
+                    >
+                      <Iconify icon="solar:camera-bold" width={18} />
+                      Ver en AR
+                    </Link>
                   </div>
                 </div>
 

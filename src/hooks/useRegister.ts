@@ -144,6 +144,7 @@ export function useRegister() {
           direccion: form.direccion || undefined,
           telefono: form.telefono || undefined,
           estadoCuenta: true,
+          ...(form.preferencias.length > 0 ? { preferencias: form.preferencias } : {}),
         }),
       });
 

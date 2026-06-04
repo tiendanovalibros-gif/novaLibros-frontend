@@ -35,12 +35,17 @@ export default function AsistenteWidget() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const ocultarWidget = OCULTAR_EN.some(
-    (ruta) => pathname === ruta || pathname.startsWith(`${ruta}/`)
-  );
+  const puedeUsarFolio =
+    user?.rol === "cliente" ||
+    user?.rol === "administrador" ||
+    user?.rol === "root";
+
+  const ocultarWidget =
+    !puedeUsarFolio ||
+    OCULTAR_EN.some((ruta) => pathname === ruta || pathname.startsWith(`${ruta}/`));
 
   const cargarHistorial = useCallback(async () => {
-    if (!isAuthenticated || user?.rol !== "cliente" || historialCargado) return;
+    if (!isAuthenticated || !puedeUsarFolio || historialCargado) return;
     setCargandoHistorial(true);
     try {
       const { mensajes: guardados } = await obtenerHistorialAsistente();
@@ -56,7 +61,7 @@ export default function AsistenteWidget() {
     } finally {
       setCargandoHistorial(false);
     }
-  }, [isAuthenticated, user?.rol, historialCargado]);
+  }, [isAuthenticated, puedeUsarFolio, historialCargado]);
 
   useEffect(() => {
     void cargarHistorial();
