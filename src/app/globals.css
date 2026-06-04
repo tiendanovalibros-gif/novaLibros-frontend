@@ -28,3 +28,53 @@
 .leaflet-bottom {
   z-index: auto;
 }
+
+/* Asistente virtual: botón flotante */
+@keyframes asistente-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+@keyframes asistente-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 10px 25px -5px rgb(37 99 235 / 0.45),
+      0 0 0 0 rgb(59 130 246 / 0.5);
+  }
+  50% {
+    box-shadow:
+      0 14px 32px -4px rgb(37 99 235 / 0.55),
+      0 0 0 10px rgb(59 130 246 / 0);
+  }
+}
+
+@keyframes asistente-wiggle {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-6deg);
+  }
+  75% {
+    transform: rotate(6deg);
+  }
+}
+
+.animate-asistente-float {
+  animation: asistente-float 2.2s ease-in-out infinite;
+}
+
+.animate-asistente-glow {
+  animation: asistente-glow 2.2s ease-in-out infinite;
+}
+
+.animate-asistente-wiggle {
+  animation: asistente-wiggle 2.2s ease-in-out infinite;
+}
