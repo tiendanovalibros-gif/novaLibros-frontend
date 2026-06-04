@@ -5,6 +5,8 @@ import Link from "next/link";
 import { apiFetch } from "@/services/api.client";
 import { coverColor, coverLetter, getBookCoverUrl } from "@/lib/book-cover";
 import Iconify from "@/components/iconify/iconify";
+import ArUnsupportedNotice from "@/components/ar/ar-unsupported-notice";
+import { useArSupport } from "@/hooks/use-ar-support";
 
 interface Libro {
   id: string;
@@ -47,6 +49,7 @@ function BookCoverThumb({ libro }: { libro: Libro }) {
 }
 
 export default function RealidadAumentadaPage() {
+  const { supported, reason, loading: checkingAr } = useArSupport();
   const [libros, setLibros] = useState<Libro[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -77,17 +80,23 @@ export default function RealidadAumentadaPage() {
           </div>
         </div>
 
-        <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 flex items-start gap-3">
-          <Iconify icon="solar:info-circle-linear" className="text-blue-500 mt-0.5 shrink-0" width={18} />
-          <p className="text-blue-800 text-sm leading-relaxed">
-            Selecciona un libro y concede acceso a la cámara para ver el libro flotando sobre el mundo real.
-            Funciona mejor en <strong>Chrome o Safari</strong> móvil, con conexión <strong>HTTPS</strong>.
-          </p>
-        </div>
+        {!checkingAr && supported && (
+          <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 flex items-start gap-3">
+            <Iconify icon="solar:info-circle-linear" className="text-blue-500 mt-0.5 shrink-0" width={18} />
+            <p className="text-blue-800 text-sm leading-relaxed">
+              Selecciona un libro y concede acceso a la cámara para ver el libro flotando sobre el mundo real.
+              Funciona mejor en <strong>Chrome o Safari</strong> móvil, con conexión <strong>HTTPS</strong>.
+            </p>
+          </div>
+        )}
+
+        {!checkingAr && !supported && (
+          <ArUnsupportedNotice reason={reason} backHref="/" backLabel="Volver al inicio" />
+        )}
       </div>
 
       {/* ── Search ── */}
-      <div className="mb-6">
+      {supported && <div className="mb-6">
         <div className="relative max-w-sm">
           <Iconify
             icon="solar:magnifer-linear"
@@ -102,10 +111,10 @@ export default function RealidadAumentadaPage() {
             className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
-      </div>
+      </div>}
 
       {/* ── States ── */}
-      {loading && (
+      {supported && loading && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {Array.from({ length: 10 }).map((_, i) => (
             <div key={i} className="rounded-xl overflow-hidden border border-slate-200 animate-pulse">
@@ -119,7 +128,7 @@ export default function RealidadAumentadaPage() {
         </div>
       )}
 
-      {error && (
+      {supported && error && (
         <div className="text-center py-16">
           <Iconify icon="solar:sad-circle-linear" className="text-slate-400 mx-auto mb-3" width={48} />
           <p className="text-slate-600 font-medium">No se pudieron cargar los libros</p>
@@ -127,7 +136,7 @@ export default function RealidadAumentadaPage() {
         </div>
       )}
 
-      {!loading && !error && librosFiltrados.length === 0 && (
+      {supported && !loading && !error && librosFiltrados.length === 0 && (
         <div className="text-center py-16">
           <Iconify icon="solar:book-2-linear" className="text-slate-300 mx-auto mb-3" width={48} />
           <p className="text-slate-500 font-medium">Sin resultados para «{busqueda}»</p>
@@ -135,7 +144,7 @@ export default function RealidadAumentadaPage() {
       )}
 
       {/* ── Book grid ── */}
-      {!loading && !error && librosFiltrados.length > 0 && (
+      {supported && !loading && !error && librosFiltrados.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {librosFiltrados.map(libro => (
             <Link

@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { apiFetch } from "@/services/api.client";
 import Iconify from "@/components/iconify/iconify";
+import ArUnsupportedNotice from "@/components/ar/ar-unsupported-notice";
+import { useArSupport } from "@/hooks/use-ar-support";
 
 // Load the camera viewer only on the client — it relies on browser APIs
 const CameraArViewer = dynamic(() => import("@/components/ar/camera-ar-viewer"), { ssr: false });
@@ -16,7 +18,9 @@ interface Libro {
 }
 
 export default function ArViewerPage() {
+  const router = useRouter();
   const { id } = useParams<{ id: string }>();
+  const { loading: checkingAr, supported, reason } = useArSupport();
   const [libro, setLibro] = useState<Libro | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -28,6 +32,26 @@ export default function ArViewerPage() {
       .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, [id]);
+
+  if (checkingAr) {
+    return (
+      <div className="fixed inset-0 bg-slate-950 flex items-center justify-center">
+        <div className="w-10 h-10 border-[3px] border-white/30 border-t-white rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!supported) {
+    return (
+      <ArUnsupportedNotice
+        variant="fullscreen"
+        reason={reason}
+        backHref="/realidad-aumentada"
+        backLabel="Volver al catálogo AR"
+        onBack={() => router.back()}
+      />
+    );
+  }
 
   if (loading) {
     return (

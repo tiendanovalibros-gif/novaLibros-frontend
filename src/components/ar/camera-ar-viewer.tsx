@@ -4,13 +4,15 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Iconify from "@/components/iconify/iconify";
 import FloatingBook from "./floating-book";
+import ArUnsupportedNotice from "./ar-unsupported-notice";
+import { checkArSupport } from "@/lib/ar-support";
 
 interface CameraArViewerProps {
   titulo: string;
   imagenPortada?: string | null;
 }
 
-type Status = "idle" | "loading" | "active" | "error";
+type Status = "idle" | "loading" | "active" | "error" | "unsupported";
 
 interface Pos {
   x: number;
@@ -54,7 +56,22 @@ export default function CameraArViewer({ titulo, imagenPortada }: CameraArViewer
     return () => stopStream();
   }, [stopStream]);
 
+  useEffect(() => {
+    const { supported, reason } = checkArSupport();
+    if (!supported) {
+      setStatus("unsupported");
+      setErrorMsg(reason);
+    }
+  }, []);
+
   const activateCamera = useCallback(async () => {
+    const { supported, reason } = checkArSupport();
+    if (!supported) {
+      setStatus("unsupported");
+      setErrorMsg(reason);
+      return;
+    }
+
     if (!navigator.mediaDevices?.getUserMedia) {
       setStatus("error");
       setErrorMsg("Tu navegador no soporta acceso a la cámara. Prueba en Chrome o Safari móvil.");
@@ -149,6 +166,17 @@ export default function CameraArViewer({ titulo, imagenPortada }: CameraArViewer
   }, []);
 
   const bookWidth = Math.round(BOOK_BASE_WIDTH * scale);
+
+  if (status === "unsupported") {
+    return (
+      <ArUnsupportedNotice
+        variant="fullscreen"
+        reason={errorMsg}
+        backLabel="Volver"
+        onBack={() => router.back()}
+      />
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black" style={{ touchAction: "none" }}>

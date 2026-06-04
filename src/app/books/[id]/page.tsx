@@ -20,6 +20,7 @@ import MainNavbar from "@/components/navigation/main-navbar";
 import StockManagerModal from "@/components/inventarios/stock-manager-modal";
 import AddToCartDialog from "@/components/carrito/add-to-cart-dialog";
 import Link from "next/link";
+import { useArSupport } from "@/hooks/use-ar-support";
 
 // ─── Tipos de la API ──────────────────────────────────────────────────────────
 interface Libro {
@@ -184,6 +185,7 @@ export default function BookDetailPage() {
   const { user } = useAuth();
   const esAdmin = user?.rol === "administrador" || user?.rol === "root";
   const esCliente = user?.rol === "cliente";
+  const { supported: arSupported, reason: arUnsupportedReason } = useArSupport();
 
   const [libro, setLibro] = useState<Libro | null>(null);
   const [autores, setAutores] = useState<Autor[]>([]);
@@ -627,13 +629,23 @@ export default function BookDetailPage() {
                     </button>
 
                     {/* Ver en realidad aumentada */}
-                    <Link
-                      href={`/realidad-aumentada/${libro.id}`}
-                      className="flex items-center justify-center gap-2 px-5 py-2.5 border-2 border-slate-300 text-slate-700 rounded-xl text-sm font-semibold hover:bg-slate-50 hover:border-slate-400 transition-colors"
-                    >
-                      <Iconify icon="solar:camera-bold" width={18} />
-                      Ver en AR
-                    </Link>
+                    {arSupported ? (
+                      <Link
+                        href={`/realidad-aumentada/${libro.id}`}
+                        className="flex items-center justify-center gap-2 px-5 py-2.5 border-2 border-slate-300 text-slate-700 rounded-xl text-sm font-semibold hover:bg-slate-50 hover:border-slate-400 transition-colors"
+                      >
+                        <Iconify icon="solar:camera-bold" width={18} />
+                        Ver en AR
+                      </Link>
+                    ) : (
+                      <span
+                        title={arUnsupportedReason}
+                        className="flex items-center justify-center gap-2 px-5 py-2.5 border-2 border-slate-200 text-slate-400 rounded-xl text-sm font-semibold cursor-not-allowed bg-slate-50"
+                      >
+                        <Iconify icon="solar:camera-bold" width={18} />
+                        AR no disponible
+                      </span>
+                    )}
                   </div>
                 </div>
 
