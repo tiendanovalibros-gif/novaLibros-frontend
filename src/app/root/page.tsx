@@ -29,6 +29,13 @@ const managementCards = [
     icon: "mdi:storefront-outline",
     iconClass: "bg-blue-50 text-blue-700",
   },
+  {
+    title: "Bandeja de soporte",
+    description: "Revise y responda los chats de soporte abiertos por los clientes.",
+    href: "/admin/soporte",
+    icon: "solar:chat-round-line-bold",
+    iconClass: "bg-emerald-50 text-emerald-700",
+  },
 ];
 
 export default function AdminLibrosPage() {

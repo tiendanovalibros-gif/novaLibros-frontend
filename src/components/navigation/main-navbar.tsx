@@ -196,6 +196,17 @@ export default function MainNavbar({
                         <span className="font-medium">Mi Perfil</span>
                       </Link>
 
+                      {(user?.rol === "administrador" || user?.rol === "root") && (
+                        <Link
+                          href="/admin/soporte"
+                          onClick={() => setMenuUsuarioAbierto(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                        >
+                          <Iconify icon="solar:chat-round-line-bold" width={20} />
+                          <span className="font-medium">Bandeja de soporte</span>
+                        </Link>
+                      )}
+
                       <button
                         onClick={() => {
                           setMenuUsuarioAbierto(false);
