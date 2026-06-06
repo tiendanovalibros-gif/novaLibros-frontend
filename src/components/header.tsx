@@ -85,7 +85,7 @@ export default function Header() {
               {user?.rol === "administrador" ? (
                 <Link
                   href="/admin"
-                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 hover:bg-slate-50 transition-colors flex items-center gap-2"
+                  className="px-3 py-2 rounded-lg text-sm font-semibold text-slate-700 hover:bg-blue-50 transition-colors"
                   title="Dashboard de administración"
                 >
                   Administración
@@ -100,6 +100,15 @@ export default function Header() {
                     Catalogo
                   </Link>
                 )
+              )}
+              {(user?.rol === "administrador" || user?.rol === "root") && (
+                <Link
+                  href="/admin/devoluciones"
+                  onClick={() => setMenuUsuarioAbierto(false)}
+                  className="px-3 py-2 rounded-lg text-sm font-semibold text-slate-700 hover:bg-blue-50 transition-colors"
+                >
+                  Devoluciones
+                </Link>
               )}
 
               {user?.rol === "cliente" && (

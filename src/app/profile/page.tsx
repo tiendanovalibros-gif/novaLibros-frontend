@@ -479,6 +479,27 @@ export default function ProfilePage() {
                   </button>
                 </Link>
 
+                <Link href="/profile/pedidos">
+                  <button className="flex w-full items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 text-left transition-all hover:border-green-300 hover:bg-green-50">
+                    <div className="rounded-lg bg-green-100 p-2">
+                      <Iconify
+                        icon="solar:bag-bold-duotone"
+                        className="text-green-600"
+                        width={20}
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold text-slate-900">Mis compras</p>
+                      <p className="text-xs text-slate-600">Revisa tu historial de compras</p>
+                    </div>
+                    <Iconify
+                      icon="solar:alt-arrow-right-linear"
+                      className="text-slate-400"
+                      width={20}
+                    />
+                  </button>
+                </Link>
+
                 <Link
                   href="/#preferencias"
                   className="flex w-full items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 text-left transition-all hover:border-orange-300 hover:bg-orange-50"
@@ -492,7 +513,9 @@ export default function ProfilePage() {
                   </div>
                   <div className="flex-1">
                     <p className="font-semibold text-slate-900">Géneros favoritos</p>
-                    <p className="text-xs text-slate-600">Configura tus preferencias en el inicio</p>
+                    <p className="text-xs text-slate-600">
+                      Configura tus preferencias en el inicio
+                    </p>
                   </div>
                   <Iconify
                     icon="solar:alt-arrow-right-linear"

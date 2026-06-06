@@ -1,5 +1,6 @@
 import { apiFetch } from "./api.client";
 import type { MetodoEntregaCodigo } from "./carrito.service";
+import type { PedidoResumen } from "@/types/pedidos.types";
 
 export interface PedidoItemLibro {
   id: string;
@@ -44,4 +45,8 @@ export interface PedidoDetalle {
 
 export async function obtenerPedido(id: string): Promise<PedidoDetalle> {
   return apiFetch<PedidoDetalle>(`/pedidos/${id}`);
+}
+
+export async function obtenerMisPedidos(): Promise<PedidoResumen[]> {
+  return apiFetch<PedidoResumen[]>("/pedidos/me");
 }
