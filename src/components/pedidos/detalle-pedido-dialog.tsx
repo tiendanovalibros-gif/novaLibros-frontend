@@ -6,7 +6,7 @@ import Iconify from "@/components/iconify/iconify";
 import EstadoBadge from "./estado-badge";
 import ConfirmFacturaDialog from "./confirm-factura-dialog";
 import type { PedidoDetalle } from "@/types/pedidos.types";
-import { generarFactura } from "@/services/facturas.service";
+import { generarFactura, descargarFacturaPdf } from "@/services/facturas.service";
 
 interface Props {
   pedido: PedidoDetalle | null;
@@ -29,8 +29,10 @@ export default function DetallePedidoDialog({
   onSolicitarDevolucion,
   onFacturaGenerada,
 }: Props) {
+  const [facturaId, setFacturaId] = useState<string | null>(null);
   const [confirmFactura, setConfirmFactura] = useState(false);
   const [generandoFactura, setGenerandoFactura] = useState(false);
+  const [descargandoPdf, setDescargandoPdf] = useState(false);
   const [facturaGenerada, setFacturaGenerada] = useState(false);
   const [errorFactura, setErrorFactura] = useState<string | null>(null);
 
@@ -44,15 +46,31 @@ export default function DetallePedidoDialog({
     setGenerandoFactura(true);
     setErrorFactura(null);
     try {
-      await generarFactura(pedido.id);
+      const factura = await generarFactura(pedido.id);
+      setFacturaId(factura.id);
       setFacturaGenerada(true);
       setConfirmFactura(false);
       onFacturaGenerada?.();
+      // Descarga automática al generar
+      await descargarFacturaPdf(factura.id);
     } catch (err: any) {
       setErrorFactura(err?.message ?? "No se pudo generar la factura");
       setConfirmFactura(false);
     } finally {
       setGenerandoFactura(false);
+    }
+  };
+
+  const handleDescargarPdf = async () => {
+    const id = facturaId ?? pedido.facturaId ?? null;
+    if (!id) return;
+    setDescargandoPdf(true);
+    try {
+      await descargarFacturaPdf(id);
+    } catch {
+      setErrorFactura("No se pudo descargar el PDF");
+    } finally {
+      setDescargandoPdf(false);
     }
   };
 
@@ -167,22 +185,33 @@ export default function DetallePedidoDialog({
                 Devolver
               </button>
             )}
-            <button
-              onClick={() => (yaTieneFactura ? undefined : setConfirmFactura(true))}
-              disabled={generandoFactura}
-              className={`flex-1 rounded-xl py-2.5 text-sm font-semibold flex items-center justify-center gap-1.5
-                ${
-                  yaTieneFactura
-                    ? "bg-green-50 text-green-700 border border-green-200 cursor-default"
-                    : "bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
-                }`}
-            >
-              <Iconify
-                icon={yaTieneFactura ? "solar:check-circle-bold" : "solar:document-bold"}
-                width={16}
-              />
-              {yaTieneFactura ? "Factura generada" : "Generar factura"}
-            </button>
+            {yaTieneFactura ? (
+              <button
+                onClick={() => void handleDescargarPdf()}
+                disabled={descargandoPdf}
+                className="flex-1 rounded-xl bg-green-50 border border-green-200 py-2.5 text-sm font-semibold text-green-700 hover:bg-green-100 disabled:opacity-50 flex items-center justify-center gap-1.5"
+              >
+                {descargandoPdf ? (
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-green-500 border-t-transparent" />
+                ) : (
+                  <Iconify icon="solar:download-bold" width={16} />
+                )}
+                Descargar factura
+              </button>
+            ) : (
+              <button
+                onClick={() => setConfirmFactura(true)}
+                disabled={generandoFactura}
+                className="flex-1 rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-1.5"
+              >
+                {generandoFactura ? (
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                ) : (
+                  <Iconify icon="solar:document-bold" width={16} />
+                )}
+                Generar factura
+              </button>
+            )}
           </div>
         </div>
       </div>

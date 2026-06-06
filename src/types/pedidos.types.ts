@@ -9,7 +9,7 @@ export interface PedidoResumen {
   estadoActual: "en_preparacion" | "enviado" | "entregado";
   totalItems: number;
   portadas: (string | null)[];
-  tieneFactura: boolean;
+  facturaId: string | null;
   devolucion: { id: string; estado: "solicitada" | "aprobada" | "rechazada" } | null;
 }
 
@@ -34,6 +34,7 @@ export interface PedidoDetalle {
   } | null;
   estadoActual: "en_preparacion" | "enviado" | "entregado";
   tieneFactura: boolean;
+  facturaId: string | null;
   devolucion: { id: string; estado: "solicitada" | "aprobada" | "rechazada" } | null;
   items: {
     id: number;
